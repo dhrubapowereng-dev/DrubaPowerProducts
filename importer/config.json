@@ -1,0 +1,20 @@
+{
+  "source_base_url": "https://engr.kholifa.com/eeepl/",
+  "wp_api_base": "http://localhost:3000/wp-json/dhruba/v1",
+  "importer_secret": "dhruba_master_etl_secret_key_2026",
+  "batch_size": 50,
+  "request_delay_seconds": 0.5,
+  "confidence_threshold": 70,
+  "allowed_brands": [
+    "ABB",
+    "Schneider Electric",
+    "Siemens",
+    "Hikvision",
+    "Dahua",
+    "Growatt",
+    "LONGi",
+    "CHINT",
+    "Mitsubishi Electric",
+    "Fuji Electric"
+  ]
+}

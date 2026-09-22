@@ -1,0 +1,94 @@
+[
+  {
+    "brand": "ABB",
+    "mpn": "SH201-C20",
+    "name": "ABB SH201-C20 Miniature Circuit Breaker (MCB) 1P 20A 6kA",
+    "mfg_code": "2CDS211001R0204",
+    "official_url": "https://new.abb.com/products/2CDS211001R0204/sh201-c20",
+    "specs": [
+      {"label": "Rated Current", "key": "rated_current", "value": "20 A", "unit": "A"},
+      {"label": "Rated Voltage", "key": "rated_voltage", "value": "230 V", "unit": "V"},
+      {"label": "Breaking Capacity", "key": "breaking_capacity", "value": "6 kA", "unit": "kA"},
+      {"label": "Poles", "key": "poles", "value": "1", "unit": "P"},
+      {"label": "Trip Curve", "key": "trip_curve", "value": "C", "unit": ""},
+      {"label": "Frequency", "key": "frequency", "value": "50/60 Hz", "unit": "Hz"},
+      {"label": "IP Rating", "key": "ip_rating", "value": "IP20", "unit": ""}
+    ],
+    "documents": [
+      {
+        "title": "ABB Compact Home SH200 Technical Datasheet",
+        "type": "datasheet",
+        "source_url": "https://library.e.abb.com/public/datasheet_sh200.pdf",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "size": 420000
+      }
+    ]
+  },
+  {
+    "brand": "ABB",
+    "mpn": "SH201-C32",
+    "name": "ABB SH201-C32 Miniature Circuit Breaker (MCB) 1P 32A 6kA",
+    "mfg_code": "2CDS211001R0324",
+    "official_url": "https://new.abb.com/products/2CDS211001R0324/sh201-c32",
+    "specs": [
+      {"label": "Rated Current", "key": "rated_current", "value": "32 A", "unit": "A"},
+      {"label": "Rated Voltage", "key": "rated_voltage", "value": "230 V", "unit": "V"},
+      {"label": "Breaking Capacity", "key": "breaking_capacity", "value": "6 kA", "unit": "kA"},
+      {"label": "Poles", "key": "poles", "value": "1", "unit": "P"},
+      {"label": "Trip Curve", "key": "trip_curve", "value": "C", "unit": ""}
+    ],
+    "documents": [
+      {
+        "title": "ABB SH200 Series Manual",
+        "type": "manual",
+        "source_url": "https://library.e.abb.com/public/manual_sh200.pdf",
+        "sha256": "8f8222956cf01b1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8",
+        "size": 890000
+      }
+    ]
+  },
+  {
+    "brand": "Schneider Electric",
+    "mpn": "A9F74120",
+    "name": "Schneider Acti9 iC60N 1P 20A C Curve 6kA MCB",
+    "mfg_code": "A9F74120",
+    "official_url": "https://www.se.com/ww/en/product/A9F74120/acti9-ic60n-1p-20a-c-curve-6000a-500v/",
+    "specs": [
+      {"label": "Rated Current", "key": "rated_current", "value": "20 A", "unit": "A"},
+      {"label": "Rated Voltage", "key": "rated_voltage", "value": "230 V", "unit": "V"},
+      {"label": "Breaking Capacity", "key": "breaking_capacity", "value": "6 kA", "unit": "kA"},
+      {"label": "Poles", "key": "poles", "value": "1", "unit": "P"},
+      {"label": "Trip Curve", "key": "trip_curve", "value": "C", "unit": ""}
+    ],
+    "documents": []
+  },
+  {
+    "brand": "Hikvision",
+    "mpn": "DS-2CD2043G2-I",
+    "name": "Hikvision 4 MP AcuSense Fixed Bullet Network IP Camera",
+    "mfg_code": "DS-2CD2043G2-I",
+    "official_url": "https://www.hikvision.com/en/products/IP-Products/Network-Cameras/Pro-Series-EasyIP-/DS-2CD2043G2-I/",
+    "specs": [
+      {"label": "Resolution", "key": "resolution", "value": "4 MP", "unit": "MP"},
+      {"label": "Lens", "key": "lens", "value": "2.8 mm", "unit": "mm"},
+      {"label": "IR Range", "key": "ir_range", "value": "40 m", "unit": "m"},
+      {"label": "IP Rating", "key": "ip_rating", "value": "IP67", "unit": ""},
+      {"label": "PoE Support", "key": "poe_support", "value": "802.3af", "unit": ""}
+    ],
+    "documents": []
+  },
+  {
+    "brand": "Growatt",
+    "mpn": "MIN 5000TL-X",
+    "name": "Growatt MIN 5000TL-X Single Phase On-Grid Solar Inverter 5kW",
+    "mfg_code": "MIN 5000TL-X",
+    "official_url": "https://www.ginverter.com/products/min-2500-6000tl-x",
+    "specs": [
+      {"label": "Rated Power", "key": "rated_power", "value": "5 kW", "unit": "kW"},
+      {"label": "Max PV Power", "key": "max_pv_power", "value": "7000 Wp", "unit": "Wp"},
+      {"label": "MPPT Trackers", "key": "mppt_count", "value": "2", "unit": ""},
+      {"label": "Max Efficiency", "key": "efficiency", "value": "98.4 %", "unit": "%"}
+    ],
+    "documents": []
+  }
+]

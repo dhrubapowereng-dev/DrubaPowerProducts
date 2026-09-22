@@ -1,0 +1,6 @@
+{
+  "name": "Dhruba Power Platform",
+  "description": "Industrial product information, search, and RFQ platform on WordPress and WooCommerce for Dhruba Power.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

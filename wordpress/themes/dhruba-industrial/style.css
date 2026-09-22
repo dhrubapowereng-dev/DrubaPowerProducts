@@ -1,0 +1,143 @@
+/*
+Theme Name: Dhruba Industrial
+Theme URI: https://dhrubapower.com/
+Author: Dhruba Power Engineering Team
+Author URI: https://dhrubapower.com/
+Description: Ultra-fast, lightweight industrial product catalog, search, and RFQ theme for Dhruba Power. Built for 50,000+ electrical, CCTV, and solar engineering products without page-builder bloat.
+Version: 1.0.0
+Requires at least: 6.4
+Tested up to: 6.7
+Requires PHP: 8.1
+License: Proprietary
+Text Domain: dhruba-industrial
+*/
+
+/* CSS Variables for Industrial Theme */
+:root {
+  --dp-brand-navy: #0f172a;
+  --dp-brand-amber: #d97706;
+  --dp-brand-blue: #0284c7;
+  --dp-surface-bg: #f8fafc;
+  --dp-card-border: #e2e8f0;
+  --dp-text-primary: #0f172a;
+  --dp-text-secondary: #475569;
+  --dp-text-muted: #94a3b8;
+  --dp-radius: 6px;
+  --dp-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --dp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--dp-surface-bg);
+  color: var(--dp-text-primary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.dp-container {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Industrial Header */
+.dp-header {
+  background: #ffffff;
+  border-bottom: 1px solid var(--dp-card-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+/* Breadcrumb */
+.dp-breadcrumb {
+  font-size: 0.8125rem;
+  color: var(--dp-text-secondary);
+  padding: 0.75rem 0;
+}
+.dp-breadcrumb a {
+  color: var(--dp-text-secondary);
+  text-decoration: none;
+}
+.dp-breadcrumb a:hover {
+  color: var(--dp-brand-blue);
+}
+
+/* Industrial Product Grid */
+.dp-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Product Card */
+.dp-card {
+  background: #ffffff;
+  border: 1px solid var(--dp-card-border);
+  border-radius: var(--dp-radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.dp-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--dp-shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Key Specs Pills */
+.dp-spec-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #334155;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-right: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Specs Table */
+.dp-specs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.dp-specs-table th,
+.dp-specs-table td {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+}
+.dp-specs-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  width: 35%;
+}
+
+/* Sticky Mobile Action Bar */
+.dp-sticky-mobile-cta {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  padding: 0.75rem 1rem;
+  z-index: 99;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 768px) {
+  .dp-sticky-mobile-cta {
+    display: flex;
+    gap: 0.75rem;
+  }
+}
