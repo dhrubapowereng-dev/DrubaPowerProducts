@@ -24,8 +24,8 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly.
 }
 
-define('DHRUBA_CATALOG_VERSION', '1.0.0');
-define('DHRUBA_CATALOG_DB_VERSION', '1.0.0');
+define('DHRUBA_CATALOG_VERSION', '1.1.0');
+define('DHRUBA_CATALOG_DB_VERSION', '1.1.0');
 define('DHRUBA_CATALOG_FILE', __FILE__);
 define('DHRUBA_CATALOG_PATH', plugin_dir_path(__FILE__));
 define('DHRUBA_CATALOG_URL', plugin_dir_url(__FILE__));
@@ -135,6 +135,11 @@ final class Plugin
     public function on_plugins_loaded(): void
     {
         load_plugin_textdomain('dhruba-catalog', false, dirname(plugin_basename(DHRUBA_CATALOG_FILE)) . '/languages');
+
+        // Self-healing database migration: auto-migrate on version bump even if activation hook wasn't triggered
+        if (get_option('dp_catalog_db_version') !== DHRUBA_CATALOG_DB_VERSION) {
+            $this->migrator->run_migrations();
+        }
     }
 
     // Accessors

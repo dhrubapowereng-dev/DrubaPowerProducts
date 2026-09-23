@@ -1,10 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INDUSTRIAL_PRODUCTS } from './data/mockProducts';
-import { ProductItem, RfqItem } from './types/catalog';
+import { ProductItem, RfqItem, RfqRecord, RfqStatus } from './types/catalog';
+import { INITIAL_RFQS } from './data/mockRfqs';
 import { Header } from './components/Header';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { RfqDrawer } from './components/RfqDrawer';
+import { RfqAdminModal } from './components/RfqAdminModal';
+import { RfqHistoryModal } from './components/RfqHistoryModal';
 import { CompareModal } from './components/CompareModal';
 import { WishlistModal } from './components/WishlistModal';
 import { SystemArchitectureModal } from './components/SystemArchitectureModal';
@@ -34,9 +37,34 @@ export default function App() {
   const [comparedProducts, setComparedProducts] = useState<ProductItem[]>([]);
   const [wishlistProducts, setWishlistProducts] = useState<ProductItem[]>([]);
   const [isRfqOpen, setIsRfqOpen] = useState(false);
+  const [isRfqHistoryOpen, setIsRfqHistoryOpen] = useState(false);
+  const [isAdminRfqOpen, setIsAdminRfqOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
   const [isArchOpen, setIsArchOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // RFQ Records Store (Local Storage + Seed Data)
+  const [rfqs, setRfqs] = useState<RfqRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('dp_rfq_records');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_RFQS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dp_rfq_records', JSON.stringify(rfqs));
+    } catch {
+      // ignore
+    }
+  }, [rfqs]);
 
   // Unique Filter Options derived from catalog
   const availableBrands = useMemo(() => {
@@ -117,16 +145,103 @@ export default function App() {
   }, [activeCategory, selectedBrands, selectedCurrents, selectedPoles, inStockOnly, searchQuery]);
 
   // Handlers for RFQ
-  const handleAddToRfq = (product: ProductItem) => {
+  const handleAddToRfq = (product: ProductItem, qty: number = 1) => {
     setRfqBasket((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
         return prev.map((item) =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.productId === product.id ? { ...item, quantity: item.quantity + qty } : item
         );
       }
-      return [...prev, { productId: product.id, product, quantity: 1, customerNote: '' }];
+      return [...prev, { productId: product.id, product, quantity: qty, customerNote: '' }];
     });
+  };
+
+  const handleQuickQuote = (product: ProductItem, qty: number = 1) => {
+    handleAddToRfq(product, qty);
+    setIsRfqOpen(true);
+  };
+
+  const handleAddCustomItemToRfq = (
+    name: string,
+    mpn: string,
+    brand: string,
+    qty: number,
+    note: string
+  ) => {
+    const customId = -Math.floor(Date.now() % 1000000);
+    const customProduct: ProductItem = {
+      id: customId,
+      name,
+      mpn: mpn || 'CUSTOM-BOQ',
+      mfgCode: '',
+      sku: `DP-CUST-${Math.abs(customId)}`,
+      brand: brand || 'OEM',
+      series: 'Custom Engineering Item',
+      category: 'eee',
+      categoryName: 'Custom Switchgear / BOQ Item',
+      inStock: true,
+      stockLocation: 'Factory Indent / Barishal Depot',
+      image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&q=80&w=400',
+      specifications: [],
+      documents: [],
+      sameSeriesModels: [],
+      compatibleAccessories: []
+    };
+
+    setRfqBasket((prev) => [
+      ...prev,
+      { productId: customId, product: customProduct, quantity: qty, customerNote: note }
+    ]);
+  };
+
+  const handleCreateRfq = (rfqData: Omit<RfqRecord, 'id' | 'createdAt' | 'updatedAt'>): RfqRecord => {
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const nextId = rfqs.length > 0 ? Math.max(...rfqs.map((r) => r.id)) + 1 : 101;
+    const newRecord: RfqRecord = {
+      ...rfqData,
+      id: nextId,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    setRfqs((prev) => [newRecord, ...prev]);
+    return newRecord;
+  };
+
+  const handleUpdateRfqStatus = (rfqId: number, status: RfqStatus, quotedTotal?: number) => {
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    setRfqs((prev) =>
+      prev.map((r) =>
+        r.id === rfqId
+          ? {
+              ...r,
+              status,
+              quotedTotal: quotedTotal !== undefined ? quotedTotal : r.quotedTotal,
+              updatedAt: now
+            }
+          : r
+      )
+    );
+  };
+
+  const handleConvertToWcOrder = (rfqId: number): number => {
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const orderId = Math.floor(1000 + Math.random() * 9000);
+
+    setRfqs((prev) =>
+      prev.map((r) =>
+        r.id === rfqId
+          ? {
+              ...r,
+              status: 'CONVERTED' as RfqStatus,
+              wcOrderId: orderId,
+              updatedAt: now
+            }
+          : r
+      )
+    );
+    return orderId;
   };
 
   const handleUpdateRfqQuantity = (productId: number, qty: number) => {
@@ -211,6 +326,10 @@ export default function App() {
         wishlistCount={wishlistProducts.length}
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenSystemArchitecture={() => setIsArchOpen(true)}
+        onOpenRfqHistory={() => setIsRfqHistoryOpen(true)}
+        onOpenAdminRfq={() => setIsAdminRfqOpen(true)}
+        isLoggedIn={isLoggedIn}
+        onToggleLogin={() => setIsLoggedIn(!isLoggedIn)}
       />
 
       {/* Main Body: Sidebar Filters + Products Grid */}
@@ -526,6 +645,7 @@ export default function App() {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToRfq={handleAddToRfq}
+        onQuickQuote={handleQuickQuote}
         isAddedToRfq={selectedProduct ? rfqBasket.some((i) => i.productId === selectedProduct.id) : false}
         onSelectModel={(id) => {
           const target = INDUSTRIAL_PRODUCTS.find((p) => p.id === id);
@@ -546,6 +666,35 @@ export default function App() {
         onUpdateNote={handleUpdateRfqNote}
         onRemoveItem={handleRemoveRfqItem}
         onClearBasket={() => setRfqBasket([])}
+        onAddCustomItem={handleAddCustomItemToRfq}
+        onSubmitRfq={handleCreateRfq}
+        onOpenHistory={() => {
+          setIsRfqOpen(false);
+          setIsRfqHistoryOpen(true);
+        }}
+        isLoggedIn={isLoggedIn}
+        onToggleLogin={() => setIsLoggedIn(!isLoggedIn)}
+      />
+
+      {/* RFQ Tracking & History Modal */}
+      <RfqHistoryModal
+        isOpen={isRfqHistoryOpen}
+        onClose={() => setIsRfqHistoryOpen(false)}
+        rfqs={rfqs}
+        isLoggedIn={isLoggedIn}
+        onOpenRfqDrawer={() => {
+          setIsRfqHistoryOpen(false);
+          setIsRfqOpen(true);
+        }}
+      />
+
+      {/* Admin RFQ Desk & WooCommerce Converter Modal */}
+      <RfqAdminModal
+        isOpen={isAdminRfqOpen}
+        onClose={() => setIsAdminRfqOpen(false)}
+        rfqs={rfqs}
+        onUpdateStatus={handleUpdateRfqStatus}
+        onConvertToWcOrder={handleConvertToWcOrder}
       />
 
       {/* Compare Modal */}

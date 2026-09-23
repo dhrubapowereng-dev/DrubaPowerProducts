@@ -18,7 +18,8 @@ import {
 interface ProductDetailModalProps {
   product: ProductItem | null;
   onClose: () => void;
-  onAddToRfq: (product: ProductItem) => void;
+  onAddToRfq: (product: ProductItem, qty?: number) => void;
+  onQuickQuote?: (product: ProductItem, qty?: number) => void;
   isAddedToRfq: boolean;
   onSelectModel: (modelId: number) => void;
   isWishlisted: boolean;
@@ -31,6 +32,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   product,
   onClose,
   onAddToRfq,
+  onQuickQuote,
   isAddedToRfq,
   onSelectModel,
   isWishlisted,
@@ -38,10 +40,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   isCompared,
   onToggleCompare
 }) => {
+  const [quoteQty, setQuoteQty] = React.useState<number>(1);
+
+  React.useEffect(() => {
+    setQuoteQty(1);
+  }, [product?.id]);
+
   if (!product) return null;
 
   const waMessage = encodeURIComponent(
-    `Hello Dhruba Power,\n\nI am requesting pricing and delivery timeline for:\nProduct: ${product.name}\nMPN: ${product.mpn}\nSKU: ${product.sku}\n\nPlease prepare an official quote for Barishal / Bangladesh supply.`
+    `Hello Dhruba Power,\n\nI am requesting official pricing and delivery timeline for:\nProduct: ${product.name}\nMPN: ${product.mpn}\nQuantity Required: ${quoteQty} units\nSKU: ${product.sku}\n\nPlease prepare an official quote for Barishal / Bangladesh supply.`
   );
   const waUrl = `https://wa.me/8801700000000?text=${waMessage}`;
 
@@ -129,32 +137,81 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 </p>
               </div>
 
+              {/* Quantity Stepper & RFQ Buttons */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 mb-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">
+                    Required Quantity (Units):
+                  </span>
+                  <div className="flex items-center border border-slate-300 rounded bg-white">
+                    <button
+                      type="button"
+                      onClick={() => setQuoteQty(Math.max(1, quoteQty - 1))}
+                      className="px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    >
+                      -
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={quoteQty}
+                      onChange={(e) => setQuoteQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      className="w-14 text-center text-xs font-bold font-mono outline-none border-x border-slate-300 py-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setQuoteQty(quoteQty + 1)}
+                      className="px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 cursor-pointer"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    onClick={() => onAddToRfq(product, quoteQty)}
+                    className={`py-2.5 px-4 text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs ${
+                      isAddedToRfq 
+                        ? 'bg-emerald-600 text-white' 
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
+                    }`}
+                    id="modal-btn-add-rfq"
+                  >
+                    {isAddedToRfq ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>In RFQ Basket</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" />
+                        <span>Add {quoteQty > 1 ? `${quoteQty} Qty` : ''} to RFQ Basket</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (onQuickQuote) {
+                        onQuickQuote(product, quoteQty);
+                      } else {
+                        onAddToRfq(product, quoteQty);
+                      }
+                    }}
+                    className="py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                    id="modal-btn-quick-rfq"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Direct Quick Quote</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-2.5">
                 <button
-                  onClick={() => onAddToRfq(product)}
-                  className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-lg flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs ${
-                    isAddedToRfq 
-                      ? 'bg-emerald-600 text-white' 
-                      : 'bg-slate-900 hover:bg-slate-800 text-white'
-                  }`}
-                  id="modal-btn-add-rfq"
-                >
-                  {isAddedToRfq ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Item in RFQ Basket</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      <span>Add to RFQ Basket</span>
-                    </>
-                  )}
-                </button>
-
-                <button
                   onClick={() => onToggleWishlist(product)}
-                  className={`py-2.5 px-3 border rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`py-2 px-3 border rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     isWishlisted 
                       ? 'bg-rose-50 border-rose-300 text-rose-700' 
                       : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -162,12 +219,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   title="Save in Project BOM"
                 >
                   <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
-                  <span>{isWishlisted ? 'Saved' : 'Save BOM'}</span>
+                  <span>{isWishlisted ? 'Saved BOM' : 'Save BOM'}</span>
                 </button>
 
                 <button
                   onClick={() => onToggleCompare(product)}
-                  className={`py-2.5 px-3 border rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                  className={`py-2 px-3 border rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     isCompared 
                       ? 'bg-sky-50 border-sky-300 text-sky-800' 
                       : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -181,7 +238,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  className="py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>WhatsApp Quote</span>

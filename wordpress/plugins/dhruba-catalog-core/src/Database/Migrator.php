@@ -54,15 +54,18 @@ final class Migrator
     {
         global $wpdb;
 
-        // Example: If upgrading from pre-1.0.0, ensure indices exist
-        if (version_compare($installed_version, '1.0.0', '<')) {
+        // Upgrading to 1.1.0: Add UNIQUE KEY on dp_specs(product_id, spec_key) and populate dp_product_index
+        if (version_compare($installed_version, '1.1.0', '<')) {
             $specs_table = Schema::get_table_name(Schema::TABLE_SPECS);
-            // Verify table created
-            $exists = $wpdb->get_var("SHOW TABLES LIKE '{$specs_table}'");
-            if ($exists) {
-                // Ensure collation matches WordPress
-                $charset_collate = $wpdb->get_charset_collate();
-                $wpdb->query("ALTER TABLE {$specs_table} {$charset_collate}");
+            $index_exists = $wpdb->get_var("SHOW INDEX FROM `{$specs_table}` WHERE Key_name = 'uq_prod_spec'");
+            if (!$index_exists) {
+                // Remove any stale duplicate specs before adding unique constraint
+                $wpdb->query("
+                    DELETE s1 FROM `{$specs_table}` s1
+                    INNER JOIN `{$specs_table}` s2 
+                    WHERE s1.id < s2.id AND s1.product_id = s2.product_id AND s1.spec_key = s2.spec_key
+                ");
+                $wpdb->query("ALTER TABLE `{$specs_table}` ADD UNIQUE KEY `uq_prod_spec` (`product_id`, `spec_key`)");
             }
         }
     }

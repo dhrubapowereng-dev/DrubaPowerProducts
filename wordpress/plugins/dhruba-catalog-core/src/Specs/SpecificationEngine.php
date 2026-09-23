@@ -199,7 +199,7 @@ final class SpecificationEngine
     }
 
     /**
-     * Set or update a specification entry idempotently
+     * Set or update a specification entry idempotently using atomic UPSERT
      */
     public function set_spec(
         int $product_id,
@@ -215,53 +215,90 @@ final class SpecificationEngine
         $table = Schema::get_table_name(Schema::TABLE_SPECS);
 
         $parsed = self::parse_spec_value($raw_value, $unit);
+        $clean_key = sanitize_key($spec_key);
+        $clean_label = sanitize_text_field($label);
+        $clean_text = sanitize_text_field($parsed['value_text']);
+        $numeric_val = $parsed['value_numeric'];
+        $clean_unit = sanitize_text_field($parsed['unit']);
+        $clean_norm = sanitize_text_field($parsed['normalized_value']);
+        $clean_url = esc_url_raw($source_url);
+        $clean_src = sanitize_key($source_type);
 
-        // Check existing
-        $existing = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT id FROM {$table} WHERE product_id = %d AND spec_key = %s",
-                $product_id,
-                $spec_key
-            )
-        );
+        $sql = "INSERT INTO `{$table}` 
+                (product_id, spec_key, label, value_text, value_numeric, unit, normalized_value, source_url, source_type, sort_order)
+                VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %s, %d)
+                ON DUPLICATE KEY UPDATE 
+                label = VALUES(label),
+                value_text = VALUES(value_text),
+                value_numeric = VALUES(value_numeric),
+                unit = VALUES(unit),
+                normalized_value = VALUES(normalized_value),
+                source_url = VALUES(source_url),
+                source_type = VALUES(source_type),
+                sort_order = VALUES(sort_order)";
 
-        $data = [
-            'product_id'       => $product_id,
-            'spec_key'         => sanitize_key($spec_key),
-            'label'            => sanitize_text_field($label),
-            'value_text'       => sanitize_text_field($parsed['value_text']),
-            'value_numeric'    => $parsed['value_numeric'],
-            'unit'             => sanitize_text_field($parsed['unit']),
-            'normalized_value' => sanitize_text_field($parsed['normalized_value']),
-            'source_url'       => esc_url_raw($source_url),
-            'source_type'      => sanitize_key($source_type),
-            'sort_order'       => $sort_order,
-        ];
+        $res = $wpdb->query($wpdb->prepare(
+            $sql,
+            $product_id,
+            $clean_key,
+            $clean_label,
+            $clean_text,
+            $numeric_val,
+            $clean_unit,
+            $clean_norm,
+            $clean_url,
+            $clean_src,
+            $sort_order
+        ));
 
-        if ($existing) {
-            return (bool)$wpdb->update($table, $data, ['id' => $existing]);
-        }
-
-        return (bool)$wpdb->insert($table, $data);
+        return $res !== false;
     }
 
     /**
-     * Batch import specs for high-speed ETL imports
+     * Batch import specs for high-speed ETL imports (Single multi-row query, eliminates N+1 queries)
      */
     public function batch_set_specs(int $product_id, array $specs): void
     {
+        if (empty($specs)) {
+            return;
+        }
+
+        global $wpdb;
+        $table = Schema::get_table_name(Schema::TABLE_SPECS);
+
+        $placeholders = [];
+        $values = [];
+
         foreach ($specs as $index => $spec) {
             $key = $spec['key'] ?? sanitize_key($spec['label']);
-            $this->set_spec(
-                $product_id,
-                $key,
-                $spec['label'],
-                (string)$spec['value'],
-                $spec['unit'] ?? '',
-                $spec['source_url'] ?? '',
-                $spec['source_type'] ?? 'etl',
-                $spec['sort_order'] ?? $index
-            );
+            $parsed = self::parse_spec_value((string)$spec['value'], $spec['unit'] ?? '');
+
+            $placeholders[] = "(%d, %s, %s, %s, %s, %s, %s, %s, %s, %d)";
+            $values[] = $product_id;
+            $values[] = sanitize_key($key);
+            $values[] = sanitize_text_field($spec['label']);
+            $values[] = sanitize_text_field($parsed['value_text']);
+            $values[] = $parsed['value_numeric'];
+            $values[] = sanitize_text_field($parsed['unit']);
+            $values[] = sanitize_text_field($parsed['normalized_value']);
+            $values[] = esc_url_raw($spec['source_url'] ?? '');
+            $values[] = sanitize_key($spec['source_type'] ?? 'etl');
+            $values[] = (int)($spec['sort_order'] ?? $index);
         }
+
+        $sql = "INSERT INTO `{$table}` 
+                (product_id, spec_key, label, value_text, value_numeric, unit, normalized_value, source_url, source_type, sort_order)
+                VALUES " . implode(', ', $placeholders) . "
+                ON DUPLICATE KEY UPDATE 
+                label = VALUES(label),
+                value_text = VALUES(value_text),
+                value_numeric = VALUES(value_numeric),
+                unit = VALUES(unit),
+                normalized_value = VALUES(normalized_value),
+                source_url = VALUES(source_url),
+                source_type = VALUES(source_type),
+                sort_order = VALUES(sort_order)";
+
+        $wpdb->query($wpdb->prepare($sql, $values));
     }
 }

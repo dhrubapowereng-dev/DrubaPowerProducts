@@ -19,6 +19,7 @@ final class Schema
     public const TABLE_RFQ_FILES = 'dp_rfq_files';
     public const TABLE_IMPORT_JOBS = 'dp_import_jobs';
     public const TABLE_SEARCH_LOGS = 'dp_search_logs';
+    public const TABLE_PRODUCT_INDEX = 'dp_product_index';
 
     /**
      * Get full table name with WordPress prefix
@@ -45,6 +46,7 @@ final class Schema
         $rfq_files_table = self::get_table_name(self::TABLE_RFQ_FILES);
         $import_table    = self::get_table_name(self::TABLE_IMPORT_JOBS);
         $search_logs_table = self::get_table_name(self::TABLE_SEARCH_LOGS);
+        $product_index_table = self::get_table_name(self::TABLE_PRODUCT_INDEX);
 
         return [
             // 1. Technical Specifications Table (Normalized, Numeric-Searchable for 50k products)
@@ -62,6 +64,7 @@ final class Schema
                 sort_order int(11) DEFAULT 0,
                 created_at datetime DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY  (id),
+                UNIQUE KEY uq_prod_spec (product_id, spec_key),
                 KEY idx_product_id (product_id),
                 KEY idx_spec_key (spec_key),
                 KEY idx_spec_numeric (spec_key, value_numeric),
@@ -205,6 +208,31 @@ final class Schema
                 KEY idx_normalized_query (normalized_query(64)),
                 KEY idx_results_count (results_count),
                 KEY idx_created_at (created_at)
+            ) {$charset_collate};",
+
+            // 9. Fast Product Lookup & Search Flat Index (Scalable to 50,000+ products without postmeta table scans)
+            "CREATE TABLE {$product_index_table} (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                product_id bigint(20) unsigned NOT NULL,
+                normalized_mpn varchar(64) NOT NULL,
+                mpn varchar(128) NOT NULL,
+                sku varchar(64) NOT NULL,
+                mfg_code varchar(128) DEFAULT '',
+                brand_slug varchar(64) DEFAULT '',
+                series_slug varchar(64) DEFAULT '',
+                category_slug varchar(64) DEFAULT '',
+                title varchar(255) NOT NULL,
+                thumbnail_url text DEFAULT NULL,
+                is_in_stock tinyint(1) NOT NULL DEFAULT 1,
+                specs_json longtext DEFAULT NULL,
+                updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY  (id),
+                UNIQUE KEY uq_product_id (product_id),
+                UNIQUE KEY uq_norm_mpn (normalized_mpn),
+                KEY idx_mpn (mpn),
+                KEY idx_sku (sku),
+                KEY idx_brand_series (brand_slug, series_slug),
+                KEY idx_stock (is_in_stock)
             ) {$charset_collate};"
         ];
     }
@@ -225,6 +253,7 @@ final class Schema
             self::get_table_name(self::TABLE_RFQ_FILES),
             self::get_table_name(self::TABLE_IMPORT_JOBS),
             self::get_table_name(self::TABLE_SEARCH_LOGS),
+            self::get_table_name(self::TABLE_PRODUCT_INDEX),
         ];
     }
 

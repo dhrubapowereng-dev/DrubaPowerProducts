@@ -26,6 +26,10 @@ interface HeaderProps {
   wishlistCount: number;
   onOpenWishlist: () => void;
   onOpenSystemArchitecture: () => void;
+  onOpenRfqHistory: () => void;
+  onOpenAdminRfq: () => void;
+  isLoggedIn: boolean;
+  onToggleLogin: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,7 +43,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCompare,
   wishlistCount,
   onOpenWishlist,
-  onOpenSystemArchitecture
+  onOpenSystemArchitecture,
+  onOpenRfqHistory,
+  onOpenAdminRfq,
+  isLoggedIn,
+  onToggleLogin
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
@@ -56,22 +64,62 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 text-[11px]">
+            {/* Account Mode Toggle */}
+            <button
+              onClick={onToggleLogin}
+              className={`px-2 py-0.5 rounded font-semibold cursor-pointer transition-colors flex items-center gap-1 ${
+                isLoggedIn 
+                  ? 'bg-sky-950 text-sky-300 border border-sky-700 hover:bg-sky-900' 
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+              title="Toggle Logged-In Corporate vs Guest RFQ Mode"
+            >
+              <span>{isLoggedIn ? '👤 Engr. Mustafizur (Corp)' : 'Guest RFQ Mode'}</span>
+            </button>
+
+            <span className="text-slate-600">|</span>
+
+            {/* Track RFQs */}
+            <button
+              onClick={onOpenRfqHistory}
+              className="flex items-center gap-1 text-slate-300 hover:text-white font-medium cursor-pointer transition-colors"
+              id="btn-header-track-rfq"
+            >
+              <FileText className="w-3 h-3 text-amber-400" />
+              <span>Track RFQs</span>
+            </button>
+
+            <span className="text-slate-600">|</span>
+
+            {/* Admin Sales Desk Button */}
+            <button
+              onClick={onOpenAdminRfq}
+              className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded font-bold cursor-pointer transition-colors border border-amber-500/30"
+              id="btn-header-admin-rfq"
+            >
+              <span>Admin Sales Desk & WC</span>
+            </button>
+
+            <span className="text-slate-600">|</span>
+
             <a 
               href="tel:+8801700000000" 
-              className="flex items-center gap-1.5 text-slate-200 hover:text-white transition-colors"
+              className="flex items-center gap-1 text-slate-200 hover:text-white transition-colors"
             >
               <Phone className="w-3 h-3 text-amber-500" />
               <span>Hotline: <strong>+880 1700-000000</strong></span>
             </a>
+
             <span className="text-slate-600">|</span>
+
             <button
               onClick={onOpenSystemArchitecture}
               className="flex items-center gap-1 text-amber-400 hover:text-amber-300 font-semibold cursor-pointer transition-colors"
               id="btn-arch-inspect"
             >
               <DownloadCloud className="w-3.5 h-3.5" />
-              <span>Installable WordPress ZIPs & Architecture</span>
+              <span>ZIPs & Architecture</span>
             </button>
           </div>
         </div>

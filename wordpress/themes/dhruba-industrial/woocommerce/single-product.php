@@ -42,6 +42,21 @@ while (have_posts()): the_post();
     $accessories   = $plugin ? $plugin->get_relations()->get_related_products($product_id, \DhrubaCatalog\Relations\RelationshipManager::REL_ACCESSORY, 6) : [];
     $replacements  = $plugin ? $plugin->get_relations()->get_related_products($product_id, \DhrubaCatalog\Relations\RelationshipManager::REL_REPLACEMENT, 4) : [];
     $wa_url        = \DhrubaCatalog\RFQ\RfqService::build_whatsapp_url($product_id);
+
+    // Batch prime post and postmeta caches to eliminate N+1 queries across related cards
+    $related_ids = array_merge(
+        wp_list_pluck($compatible, 'target_product_id'),
+        wp_list_pluck($accessories, 'target_product_id'),
+        wp_list_pluck($replacements, 'target_product_id')
+    );
+    $clean_related_ids = array_filter(array_map('intval', $related_ids));
+    if (!empty($clean_related_ids)) {
+        if (function_exists('_prime_post_caches')) {
+            _prime_post_caches($clean_related_ids, ['postmeta' => true, 'terms' => true]);
+        }
+        update_meta_cache('post', $clean_related_ids);
+        update_object_term_cache($clean_related_ids, 'product');
+    }
 ?>
 
 <div class="dp-container" style="padding-top:1.5rem; padding-bottom:4rem;">
@@ -183,16 +198,18 @@ while (have_posts()): the_post();
     </h2>
 
     <?php if (!empty($specs)): ?>
-      <table class="dp-specs-table">
-        <tbody>
-          <?php foreach ($specs as $s): ?>
-            <tr>
-              <th><?php echo esc_html($s['label']); ?></th>
-              <td><strong><?php echo esc_html($s['value_text']); ?></strong> <?php if ($s['unit']) echo esc_html('(' . $s['unit'] . ')'); ?></td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+      <div class="dp-table-responsive">
+        <table class="dp-specs-table">
+          <tbody>
+            <?php foreach ($specs as $s): ?>
+              <tr>
+                <th><?php echo esc_html($s['label']); ?></th>
+                <td><strong><?php echo esc_html($s['value_text']); ?></strong> <?php if ($s['unit']) echo esc_html('(' . $s['unit'] . ')'); ?></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
     <?php else: ?>
       <p style="color:#64748b; font-size:0.875rem;">Detailed engineering specifications are being verified against manufacturer master catalogs.</p>
     <?php endif; ?>

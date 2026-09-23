@@ -197,8 +197,33 @@ final class RestController
         return new WP_REST_Response($data, 200);
     }
 
+    /**
+     * Rate limiting helper to prevent brute-force or denial-of-service on public endpoints
+     */
+    private function check_rate_limit(string $action, int $limit = 20, int $window_seconds = 600): bool
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $sanitized_ip = preg_replace('/[^0-9a-fA-F:.]/', '', (string)$ip);
+        $transient_key = 'dp_rl_' . md5($action . '_' . $sanitized_ip);
+        $attempts = (int)get_transient($transient_key);
+
+        if ($attempts >= $limit) {
+            return false;
+        }
+
+        set_transient($transient_key, $attempts + 1, $window_seconds);
+        return true;
+    }
+
     public function handle_create_rfq(WP_REST_Request $request): WP_REST_Response
     {
+        if (!$this->check_rate_limit('rfq_create', 20, 600)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => __('Rate limit exceeded. Please wait before submitting more quotes.', 'dhruba-catalog'),
+            ], 429);
+        }
+
         $params  = $request->get_json_params() ?: $request->get_body_params();
         $contact = sanitize_text_field($params['contact'] ?? '');
         $email   = sanitize_email($params['email'] ?? '');
@@ -220,6 +245,13 @@ final class RestController
 
     public function handle_upload_rfq_file(WP_REST_Request $request): WP_REST_Response
     {
+        if (!$this->check_rate_limit('rfq_upload', 30, 600)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => __('Upload rate limit exceeded. Please wait before uploading more files.', 'dhruba-catalog'),
+            ], 429);
+        }
+
         $files = $request->get_file_params();
         if (empty($files['file'])) {
             return new WP_REST_Response([
@@ -258,6 +290,21 @@ final class RestController
 
         if (!$data) {
             return new WP_REST_Response(['error' => 'RFQ not found'], 404);
+        }
+
+        // Authorization check (IDOR mitigation)
+        $current_user_id = get_current_user_id();
+        $is_admin = current_user_can('manage_options') || current_user_can('edit_shop_orders');
+        $is_owner = $current_user_id > 0 && (int)($data['rfq']['user_id'] ?? 0) === $current_user_id;
+
+        $req_token = $request->get_header('x-guest-token') ?: (string)$request->get_param('guest_token');
+        $token_valid = !empty($req_token) && hash_equals($data['rfq']['guest_token'] ?? '', $req_token);
+
+        if (!$is_admin && !$is_owner && !$token_valid) {
+            return new WP_REST_Response([
+                'error'   => 'Access denied',
+                'message' => __('You do not have permission to view this RFQ.', 'dhruba-catalog'),
+            ], 403);
         }
 
         return new WP_REST_Response($data, 200);
@@ -301,20 +348,15 @@ final class RestController
             return new WP_REST_Response(['error' => 'Missing brand or mpn in contract payload.'], 400);
         }
 
-        // Idempotent ingestion logic
+        // Idempotent ingestion logic using fast indexed MPN lookup
         $mpn      = sanitize_text_field($payload['mpn']);
         $norm_mpn = ProductMetaManager::normalize_mpn($mpn);
 
-        // Check if existing
-        global $wpdb;
-        $existing_id = $wpdb->get_var($wpdb->prepare(
-            "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s LIMIT 1",
-            ProductMetaManager::META_NORMALIZED_MPN,
-            $norm_mpn
-        ));
+        // Check if existing via O(1) indexed lookup (avoids 500k-row postmeta table scans)
+        $existing_id = ProductMetaManager::lookup_product_by_mpn($mpn);
 
         if ($existing_id) {
-            $product_id = (int)$existing_id;
+            $product_id = $existing_id;
             $action = 'updated';
         } else {
             // Create WooCommerce Simple Product
@@ -334,7 +376,7 @@ final class RestController
         // Assign Brand
         $brand_term = wp_set_object_terms($product_id, sanitize_text_field($payload['brand']), 'dp_brand');
 
-        // Ingest Specs
+        // Ingest Specs (Batch query prevents N+1)
         if (!empty($payload['specifications']) && is_array($payload['specifications'])) {
             $this->plugin->get_specs()->batch_set_specs($product_id, $payload['specifications']);
         }
@@ -355,7 +397,10 @@ final class RestController
             }
         }
 
-        // Sync Search Index
+        // Sync Fast Product Search & Lookup Index
+        ProductMetaManager::sync_product_index($product_id);
+
+        // Sync Search Engine Adapter
         $this->plugin->get_search()->index_product($product_id);
 
         return new WP_REST_Response([

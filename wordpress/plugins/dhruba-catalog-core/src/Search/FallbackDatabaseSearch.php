@@ -25,6 +25,15 @@ final class FallbackDatabaseSearch implements SearchInterface
         $clean_query = trim($query);
         $norm_query  = ProductMetaManager::normalize_mpn($clean_query);
 
+        // Search Result Transient Cache (5 minutes TTL for instant query recall)
+        $cache_key = 'dp_srch_' . md5($clean_query . '_' . serialize($filters) . "_{$page}_{$per_page}_{$sort}");
+        $cached = get_transient($cache_key);
+        if (is_array($cached)) {
+            $cached['processingTimeMs'] = round((microtime(true) - $start_time) * 1000, 2);
+            $cached['cached'] = true;
+            return $cached;
+        }
+
         $where = ["p.post_type = 'product'", "p.post_status = 'publish'"];
         $joins = [];
 
@@ -106,6 +115,16 @@ final class FallbackDatabaseSearch implements SearchInterface
 
         $results = $wpdb->get_results($sql_items, ARRAY_A);
 
+        // BATCH PRIME POST, POSTMETA & TERM CACHES TO PREVENT N+1 QUERIES
+        $post_ids = array_map(fn($r) => (int)$r['ID'], $results);
+        if (!empty($post_ids)) {
+            if (function_exists('_prime_post_caches')) {
+                _prime_post_caches($post_ids, ['postmeta' => true, 'terms' => true]);
+            }
+            update_meta_cache('post', $post_ids);
+            update_object_term_cache($post_ids, 'product');
+        }
+
         $hits = [];
         foreach ($results as $row) {
             $id = (int)$row['ID'];
@@ -131,7 +150,7 @@ final class FallbackDatabaseSearch implements SearchInterface
             ];
         }
 
-        return [
+        $response = [
             'success'          => true,
             'hits'             => $hits,
             'total'            => $total,
@@ -141,6 +160,10 @@ final class FallbackDatabaseSearch implements SearchInterface
             ],
             'processingTimeMs' => round((microtime(true) - $start_time) * 1000, 2),
         ];
+
+        set_transient($cache_key, $response, 300);
+
+        return $response;
     }
 
     public function index_product(int $product_id): bool

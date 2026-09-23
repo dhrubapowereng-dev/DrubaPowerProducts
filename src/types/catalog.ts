@@ -43,6 +43,60 @@ export interface RfqItem {
   customerNote: string;
 }
 
+export type RfqStatus = 
+  | 'NEW' 
+  | 'REVIEWING' 
+  | 'MATCHING' 
+  | 'QUOTED' 
+  | 'CUSTOMER_REVIEW' 
+  | 'ACCEPTED' 
+  | 'CONVERTED' 
+  | 'REJECTED' 
+  | 'CLOSED';
+
+export interface RfqItemRecord {
+  productId?: number;
+  title: string;
+  mpn: string;
+  brand?: string;
+  quantity: number;
+  customerNote?: string;
+  unitPrice?: number;
+  lineTotal?: number;
+}
+
+export interface RfqFileRecord {
+  name: string;
+  size: number;
+  mime: string;
+  sha256: string;
+  uploadedAt: string;
+}
+
+export interface RfqRecord {
+  id: number;
+  rfqNumber: string;
+  company: string;
+  contact: string;
+  email: string;
+  phone: string;
+  whatsapp?: string;
+  location: string;
+  message?: string;
+  status: RfqStatus;
+  isGuest: boolean;
+  guestToken?: string;
+  userId?: number;
+  items: RfqItemRecord[];
+  files: RfqFileRecord[];
+  quotedTotal?: number;
+  currency: string;
+  internalNotes?: string;
+  wcOrderId?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FilterState {
   searchQuery: string;
   category: string;

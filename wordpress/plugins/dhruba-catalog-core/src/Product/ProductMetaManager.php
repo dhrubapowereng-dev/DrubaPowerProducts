@@ -364,5 +364,105 @@ final class ProductMetaManager
         if (isset($_POST[self::META_DATA_STATUS])) {
             update_post_meta($post_id, self::META_DATA_STATUS, sanitize_key(wp_unslash($_POST[self::META_DATA_STATUS])));
         }
+
+        // Keep dp_product_index synchronized for O(1) indexed lookup at 50,000 products
+        self::sync_product_index($post_id);
+    }
+
+    /**
+     * Fast O(1) indexed product lookup by MPN, avoiding slow wp_postmeta table scans
+     */
+    public static function lookup_product_by_mpn(string $mpn): ?int
+    {
+        global $wpdb;
+        $norm_mpn = self::normalize_mpn($mpn);
+        $table = \DhrubaCatalog\Database\Schema::get_table_name(\DhrubaCatalog\Database\Schema::TABLE_PRODUCT_INDEX);
+
+        $id = $wpdb->get_var($wpdb->prepare(
+            "SELECT product_id FROM `{$table}` WHERE normalized_mpn = %s LIMIT 1",
+            $norm_mpn
+        ));
+
+        if ($id) {
+            return (int)$id;
+        }
+
+        // Fallback to postmeta if index not yet warmed
+        $meta_id = $wpdb->get_var($wpdb->prepare(
+            "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s LIMIT 1",
+            self::META_NORMALIZED_MPN,
+            $norm_mpn
+        ));
+
+        return $meta_id ? (int)$meta_id : null;
+    }
+
+    /**
+     * Synchronize a product into wp_dp_product_index
+     */
+    public static function sync_product_index(int $product_id): bool
+    {
+        global $wpdb;
+        $table = \DhrubaCatalog\Database\Schema::get_table_name(\DhrubaCatalog\Database\Schema::TABLE_PRODUCT_INDEX);
+
+        $post = get_post($product_id);
+        if (!$post || $post->post_type !== 'product') {
+            return false;
+        }
+
+        $mpn      = get_post_meta($product_id, self::META_MPN, true) ?: $post->post_title;
+        $norm_mpn = self::normalize_mpn($mpn);
+        if (empty($norm_mpn)) {
+            $norm_mpn = 'PROD' . $product_id;
+        }
+
+        $sku      = get_post_meta($product_id, '_sku', true) ?: (get_post_meta($product_id, self::META_INTERNAL_SKU, true) ?: "DP-PROD-{$product_id}");
+        $mfg_code = get_post_meta($product_id, self::META_MANUFACTURER_CODE, true) ?: '';
+
+        // Taxonomies
+        $brands   = wp_get_post_terms($product_id, 'dp_brand', ['fields' => 'slugs']);
+        $brand_slug = (!empty($brands) && !is_wp_error($brands)) ? $brands[0] : '';
+
+        $series   = wp_get_post_terms($product_id, 'dp_series', ['fields' => 'slugs']);
+        $series_slug = (!empty($series) && !is_wp_error($series)) ? $series[0] : '';
+
+        $cats     = wp_get_post_terms($product_id, 'product_cat', ['fields' => 'slugs']);
+        $cat_slug = (!empty($cats) && !is_wp_error($cats)) ? $cats[0] : '';
+
+        $stock_status = get_post_meta($product_id, '_stock_status', true);
+        $is_in_stock  = ($stock_status !== 'outofstock') ? 1 : 0;
+        $thumb_url    = get_the_post_thumbnail_url($product_id, 'medium') ?: '';
+
+        $sql = "INSERT INTO `{$table}`
+                (product_id, normalized_mpn, mpn, sku, mfg_code, brand_slug, series_slug, category_slug, title, thumbnail_url, is_in_stock)
+                VALUES (%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d)
+                ON DUPLICATE KEY UPDATE
+                normalized_mpn = VALUES(normalized_mpn),
+                mpn = VALUES(mpn),
+                sku = VALUES(sku),
+                mfg_code = VALUES(mfg_code),
+                brand_slug = VALUES(brand_slug),
+                series_slug = VALUES(series_slug),
+                category_slug = VALUES(category_slug),
+                title = VALUES(title),
+                thumbnail_url = VALUES(thumbnail_url),
+                is_in_stock = VALUES(is_in_stock)";
+
+        $res = $wpdb->query($wpdb->prepare(
+            $sql,
+            $product_id,
+            $norm_mpn,
+            $mpn,
+            $sku,
+            $mfg_code,
+            $brand_slug,
+            $series_slug,
+            $cat_slug,
+            $post->post_title,
+            $thumb_url,
+            $is_in_stock
+        ));
+
+        return $res !== false;
     }
 }

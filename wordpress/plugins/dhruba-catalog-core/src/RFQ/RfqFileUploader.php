@@ -71,7 +71,8 @@ final class RfqFileUploader
 
         // Target storage directory: wp-content/uploads/dhruba-rfqs/{YEAR}/{MONTH}/
         $upload_dir = wp_upload_dir();
-        $target_dir = $upload_dir['basedir'] . '/dhruba-rfqs/' . gmdate('Y/m');
+        $base_rfq_dir = $upload_dir['basedir'] . '/dhruba-rfqs';
+        $target_dir   = $base_rfq_dir . '/' . gmdate('Y/m');
 
         if (!wp_mkdir_p($target_dir)) {
             return [
@@ -80,14 +81,42 @@ final class RfqFileUploader
             ];
         }
 
-        // Place .htaccess in dhruba-rfqs root to prevent PHP execution
-        $htaccess_path = $upload_dir['basedir'] . '/dhruba-rfqs/.htaccess';
+        // Place comprehensive .htaccess (Apache 2.4 + 2.2) in dhruba-rfqs root to prevent execution of any script
+        $htaccess_path = $base_rfq_dir . '/.htaccess';
         if (!file_exists($htaccess_path)) {
-            @file_put_contents($htaccess_path, "Options -ExecCGI -Indexes\n<FilesMatch \"\.(php|php5|php7|phtml|phar)$\">\nOrder Deny,Allow\nDeny from all\n</FilesMatch>\n");
+            $htaccess_content = "# Dhruba Industrial Secure Attachments Storage\n"
+                . "Options -ExecCGI -Indexes\n"
+                . "<FilesMatch \"\.(php|php3|php4|php5|php7|php8|phtml|phar|shtml|cgi|pl|py|sh|bash|env|htaccess)$\">\n"
+                . "  <IfModule mod_authz_core.c>\n"
+                . "    Require all denied\n"
+                . "  </IfModule>\n"
+                . "  <IfModule !mod_authz_core.c>\n"
+                . "    Order Deny,Allow\n"
+                . "    Deny from all\n"
+                . "  </IfModule>\n"
+                . "</FilesMatch>\n";
+            @file_put_contents($htaccess_path, $htaccess_content);
+        }
+
+        // Place index.php in root and subdirectories to prevent directory listing on Nginx
+        if (!file_exists($base_rfq_dir . '/index.php')) {
+            @file_put_contents($base_rfq_dir . '/index.php', "<?php // Silence is golden.\n");
+        }
+        if (!file_exists($target_dir . '/index.php')) {
+            @file_put_contents($target_dir . '/index.php', "<?php // Silence is golden.\n");
+        }
+
+        // Check for double extension attacks (e.g. quote.php.pdf or invoice.exe.xlsx)
+        $raw_name = (string)($file['name'] ?? 'upload');
+        if (preg_match('/\.(php|phtml|phar|shtml|cgi|pl|py|sh|exe|bin|bat)(\.|$)/i', $raw_name)) {
+            return [
+                'success' => false,
+                'message' => __('Potential malicious file extension pattern detected.', 'dhruba-catalog'),
+            ];
         }
 
         $sha256        = hash_file('sha256', $file['tmp_name']);
-        $original_name = sanitize_file_name($file['name']);
+        $original_name = sanitize_file_name($raw_name);
         $extension     = self::ALLOWED_MIME_TYPES[$mime_type];
         $stored_name   = 'boq_' . gmdate('YmdHis') . '_' . substr($sha256, 0, 12) . '.' . $extension;
         $destination   = $target_dir . '/' . $stored_name;
@@ -98,6 +127,9 @@ final class RfqFileUploader
                 'message' => __('Failed to persist uploaded document on server.', 'dhruba-catalog'),
             ];
         }
+
+        // Restrict uploaded file permissions
+        @chmod($destination, 0644);
 
         return [
             'success'   => true,

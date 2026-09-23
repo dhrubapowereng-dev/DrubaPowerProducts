@@ -149,6 +149,15 @@ final class RfqService
         $items = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table_items} WHERE rfq_id = %d ORDER BY id ASC", $rfq_id), ARRAY_A);
         $files = $wpdb->get_results($wpdb->prepare("SELECT id, file_name, mime_type, file_size, uploaded_at FROM {$table_files} WHERE rfq_id = %d", $rfq_id), ARRAY_A);
 
+        // Batch prime posts and postmeta to prevent N+1 queries on line items
+        $product_ids = array_filter(array_map(fn($i) => (int)($i['product_id'] ?? 0), $items));
+        if (!empty($product_ids)) {
+            if (function_exists('_prime_post_caches')) {
+                _prime_post_caches($product_ids, ['postmeta' => true]);
+            }
+            update_meta_cache('post', $product_ids);
+        }
+
         // Enrich items with catalog post titles & MPN if product_id exists
         foreach ($items as &$item) {
             if (!empty($item['product_id'])) {

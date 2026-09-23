@@ -9,7 +9,9 @@ import {
   FileCode, 
   CheckCircle2, 
   Search, 
-  Cpu 
+  Cpu,
+  FileUp,
+  ShoppingCart
 } from 'lucide-react';
 
 interface SystemArchitectureModalProps {
@@ -21,7 +23,7 @@ export const SystemArchitectureModal: React.FC<SystemArchitectureModalProps> = (
   isOpen,
   onClose
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'plugin' | 'theme' | 'etl' | 'db' | 'search'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'rfq' | 'search' | 'plugin' | 'theme' | 'etl' | 'db'>('overview');
 
   if (!isOpen) return null;
 
@@ -56,7 +58,7 @@ export const SystemArchitectureModal: React.FC<SystemArchitectureModalProps> = (
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-slate-100 border-b border-slate-200 px-6 flex gap-2 text-xs font-bold text-slate-600">
+        <div className="bg-slate-100 border-b border-slate-200 px-6 flex gap-2 text-xs font-bold text-slate-600 overflow-x-auto">
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-2.5 px-3 border-b-2 cursor-pointer transition-colors ${
@@ -65,7 +67,18 @@ export const SystemArchitectureModal: React.FC<SystemArchitectureModalProps> = (
                 : 'border-transparent hover:text-slate-900'
             }`}
           >
-            Architecture Overview & ZIPs
+            Overview & ZIPs
+          </button>
+          <button
+            onClick={() => setActiveTab('rfq')}
+            className={`py-2.5 px-3 border-b-2 cursor-pointer transition-colors flex items-center gap-1.5 ${
+              activeTab === 'rfq'
+                ? 'border-slate-900 text-slate-900 bg-white'
+                : 'border-transparent hover:text-slate-900'
+            }`}
+          >
+            <FileCode className="w-3.5 h-3.5 text-amber-600" />
+            RFQ & WC Order Architecture
           </button>
           <button
             onClick={() => setActiveTab('search')}
@@ -199,6 +212,138 @@ export const SystemArchitectureModal: React.FC<SystemArchitectureModalProps> = (
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'rfq' && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm mb-1">
+                  Complete Industrial RFQ Engine & WooCommerce Order Conversion
+                </h4>
+                <p className="text-slate-600 leading-relaxed text-xs">
+                  Production-grade B2B quotation architecture built into <code>dhruba-catalog-core</code>. Supports multi-item baskets, custom unlisted BOQ lines, secure 25MB file attachments, automated dual notifications, and one-click conversion into WooCommerce Commercial Orders.
+                </p>
+              </div>
+
+              {/* Architecture Pillars Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                  <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Multi-Product Basket & Direct Product RFQ</span>
+                  </h5>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Engineers can submit an RFQ for a single item from the product detail modal, build a multi-line switchgear basket with custom quantities and specification overrides, or add custom unlisted BOQ items.
+                  </p>
+                  <code className="text-[10px] bg-white p-1 rounded border border-slate-200 block font-mono text-slate-700">
+                    src/RFQ/RfqService.php &bull; src/RFQ/BoqModel.php
+                  </code>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                  <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-sky-600" />
+                    <span>Guest & Corporate Logged-in Sessions</span>
+                  </h5>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Unauthenticated guests receive a cryptographic <code>guest_token</code> enabling persistent tracking without forced login. Corporate customers link their WordPress <code>user_id</code> to view company-wide quotation archives.
+                  </p>
+                  <code className="text-[10px] bg-white p-1 rounded border border-slate-200 block font-mono text-slate-700">
+                    GET /dhruba/v1/rfq/history?guest_token=gst_...
+                  </code>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                  <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <FileUp className="w-4 h-4 text-amber-600" />
+                    <span>Secure BOQ File Upload Pipeline</span>
+                  </h5>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Enforces strict MIME validation (PDF, Excel XLSX/CSV, AutoCAD DWG), 25MB limits, SHA-256 integrity hashing, safe UUID renaming, and <code>.htaccess</code> non-executable storage in <code>wp-content/uploads/dhruba_rfq/</code>.
+                  </p>
+                  <code className="text-[10px] bg-white p-1 rounded border border-slate-200 block font-mono text-slate-700">
+                    src/RFQ/RfqFileUploader.php
+                  </code>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                  <h5 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <ShoppingCart className="w-4 h-4 text-purple-600" />
+                    <span>WooCommerce Order Conversion Bridge</span>
+                  </h5>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Once a quote is marked <code>ACCEPTED</code>, sales engineers click "Convert to WooCommerce Order". <code>WcOrderConverter.php</code> programmatically invokes <code>wc_create_order()</code>, maps custom line items and fees, and sets order status.
+                  </p>
+                  <code className="text-[10px] bg-white p-1 rounded border border-slate-200 block font-mono text-slate-700">
+                    src/RFQ/WcOrderConverter.php
+                  </code>
+                </div>
+              </div>
+
+              {/* Status Workflow Stepper Architecture */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
+                <h5 className="font-bold text-slate-900 text-xs uppercase tracking-wider">
+                  State Machine Lifecycle Workflow
+                </h5>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-amber-700 block">1. NEW</strong>
+                    <span className="text-[10px] text-slate-500">Inquiry Received</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-sky-700 block">2. REVIEWING</strong>
+                    <span className="text-[10px] text-slate-500">Technical Specs Check</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-indigo-700 block">3. MATCHING</strong>
+                    <span className="text-[10px] text-slate-500">Stock & Import Allocation</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-purple-700 block">4. QUOTED</strong>
+                    <span className="text-[10px] text-slate-500">BDT Pricing Dispatched</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-blue-700 block">5. CUSTOMER_REVIEW</strong>
+                    <span className="text-[10px] text-slate-500">Client Commercial Approval</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-emerald-700 block">6. ACCEPTED</strong>
+                    <span className="text-[10px] text-slate-500">Ready for Execution</span>
+                  </div>
+                  <div className="bg-emerald-600 text-white p-2 rounded text-center">
+                    <strong className="block">7. CONVERTED</strong>
+                    <span className="text-[10px] text-emerald-100">WC Order Active</span>
+                  </div>
+                  <div className="bg-white p-2 rounded border border-slate-200 text-center">
+                    <strong className="text-rose-700 block">CLOSED / REJECTED</strong>
+                    <span className="text-[10px] text-slate-500">Terminal Archived</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Database Schema Reference */}
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto">
+                <div className="text-amber-400 font-bold mb-1">// Custom RFQ Tables in wp_dp_*</div>
+{`CREATE TABLE wp_dp_rfqs (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    rfq_number VARCHAR(32) NOT NULL UNIQUE,       -- RFQ-202609-XXXXX
+    user_id BIGINT UNSIGNED DEFAULT 0,
+    guest_token VARCHAR(64) NULL,
+    company_name VARCHAR(191),
+    contact_name VARCHAR(191) NOT NULL,
+    email VARCHAR(191) NOT NULL,
+    phone VARCHAR(64) NOT NULL,
+    whatsapp VARCHAR(64) NULL,
+    delivery_location VARCHAR(255) NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'NEW',   -- NEW|REVIEWING|MATCHING|QUOTED|ACCEPTED|CONVERTED
+    quoted_total DECIMAL(14,2) NULL,
+    currency VARCHAR(8) DEFAULT 'BDT',
+    wc_order_id BIGINT UNSIGNED NULL,
+    converted_at DATETIME NULL,
+    created_at DATETIME NOT NULL
+);`}
               </div>
             </div>
           )}

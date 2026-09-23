@@ -52,8 +52,28 @@ final class WcOrderConverter
             ];
         }
 
+        // Atomic locking: prevent duplicate WooCommerce orders if concurrent requests hit conversion
+        $previous_status = $rfq['status'] ?? 'ACCEPTED';
+        $lock_acquired = $wpdb->query($wpdb->prepare(
+            "UPDATE {$table_rfqs} SET status = 'CONVERTING' WHERE id = %d AND (wc_order_id IS NULL OR wc_order_id = 0) AND status != 'CONVERTING'",
+            $rfq_id
+        ));
+
+        if (!$lock_acquired) {
+            $existing_wc_id = $wpdb->get_var($wpdb->prepare("SELECT wc_order_id FROM {$table_rfqs} WHERE id = %d", $rfq_id));
+            return [
+                'success'  => false,
+                'message'  => $existing_wc_id 
+                    ? sprintf(__('This RFQ has already been converted to Order #%d.', 'dhruba-catalog'), (int)$existing_wc_id)
+                    : __('This RFQ is currently being converted by another concurrent process.', 'dhruba-catalog'),
+                'order_id' => $existing_wc_id ? (int)$existing_wc_id : null,
+            ];
+        }
+
         $items = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$table_items} WHERE rfq_id = %d", $rfq_id), ARRAY_A);
         if (empty($items)) {
+            // Release lock
+            $wpdb->update($table_rfqs, ['status' => $previous_status], ['id' => $rfq_id]);
             return [
                 'success' => false,
                 'message' => __('RFQ has no line items to convert.', 'dhruba-catalog'),
@@ -77,6 +97,7 @@ final class WcOrderConverter
         ]);
 
         if (is_wp_error($order)) {
+            $wpdb->update($table_rfqs, ['status' => $previous_status], ['id' => $rfq_id]);
             return [
                 'success' => false,
                 'message' => $order->get_error_message(),
