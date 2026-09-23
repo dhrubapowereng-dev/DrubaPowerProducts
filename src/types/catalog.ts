@@ -34,6 +34,8 @@ export interface ProductItem {
   documents: TechnicalDocument[];
   sameSeriesModels: { id: number; name: string; mpn: string }[];
   compatibleAccessories: { id: number; name: string; relation: string }[];
+  relatedServiceId?: string;
+  relatedServiceName?: string;
 }
 
 export interface RfqItem {

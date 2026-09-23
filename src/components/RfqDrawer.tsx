@@ -82,19 +82,8 @@ export const RfqDrawer: React.FC<RfqDrawerProps> = ({
   // Sync user profile when switching to logged-in
   useEffect(() => {
     if (isLoggedIn) {
-      setCompany('Barishal Power Distribution & Switchgear Ltd.');
-      setContact('Engr. Mustafizur Rahman');
-      setEmail('mustafiz.engr@barishalpower.com.bd');
-      setPhone('+880 1712-445566');
-      setWhatsapp('+880 1712-445566');
-      setLocation('Band Road, Barishal Sadar');
-    } else {
-      setCompany('');
-      setContact('');
-      setEmail('');
-      setPhone('');
-      setWhatsapp('');
-      setLocation('Barishal BSCIC Industrial Estate');
+      if (!company) setCompany('Industrial Partner Ltd.');
+      if (!contact) setContact('Authorized Procurement Officer');
     }
   }, [isLoggedIn]);
 
@@ -218,7 +207,7 @@ export const RfqDrawer: React.FC<RfqDrawerProps> = ({
       msg += `${idx + 1}. ${it.title} (MPN: ${it.mpn || 'N/A'}) — Qty: ${it.quantity}\n`;
     });
     msg += `\nPlease expedite quotation with official BDT pricing & Barishal delivery schedule.`;
-    return `https://wa.me/8801700000000?text=${encodeURIComponent(msg)}`;
+    return `https://wa.me/8801711197767?text=${encodeURIComponent(msg)}`;
   };
 
   return (
@@ -267,13 +256,13 @@ export const RfqDrawer: React.FC<RfqDrawerProps> = ({
           </div>
         </div>
 
-        {/* Account Mode Bar: Guest RFQ vs Logged-In Corporate Account */}
+        {/* Account Mode Bar: Guest RFQ vs Commercial Account */}
         <div className="bg-slate-800 text-xs px-6 py-2 border-b border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <User className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-slate-300">Quotation Mode:</span>
             <span className="font-bold text-white">
-              {isLoggedIn ? 'Commercial Corporate Account (Engr. Mustafizur)' : 'Guest RFQ (Quick Unauthenticated)'}
+              {isLoggedIn ? 'Registered Commercial Client Account' : 'Standard Procurement Quote'}
             </span>
           </div>
 
@@ -281,7 +270,7 @@ export const RfqDrawer: React.FC<RfqDrawerProps> = ({
             onClick={onToggleLogin}
             className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
           >
-            {isLoggedIn ? 'Switch to Guest Mode' : 'Simulate Corporate Login'}
+            {isLoggedIn ? 'Sign Out / Guest Mode' : 'Customer Account Login'}
           </button>
         </div>
 

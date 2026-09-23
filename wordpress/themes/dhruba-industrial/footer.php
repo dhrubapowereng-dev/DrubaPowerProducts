@@ -19,9 +19,9 @@ if (!defined('ABSPATH')) {
           Specialized distributor & engineering supplier of high-reliability low & medium voltage electrical switchgear, industrial automation, CCTV surveillance, and solar energy systems in Bangladesh.
         </p>
         <p style="font-size:0.8125rem; color:#cbd5e1; margin-top:0.75rem;">
-          <strong>Location:</strong> Barishal Division, Bangladesh<br>
-          <strong>Hotline:</strong> +880 1700-000000<br>
-          <strong>Email:</strong> dhrubapowereng@gmail.com
+          <strong>Location:</strong> Khan Sarak, Kazipar, C&B Road, Barishal 8200, Bangladesh<br>
+          <strong>Hotline / WhatsApp:</strong> +880 1711-197767<br>
+          <strong>Email:</strong> info@dhrubapower.com
         </p>
       </div>
 

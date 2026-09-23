@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
         <span>Authorized Industrial & Engineering Equipment Distributor</span>
       </div>
       <div>
-        <span>Hotline: <strong style="color:#ffffff;">+880 1700-000000</strong></span>
+        <span>Hotline: <strong style="color:#ffffff;">+880 1711-197767</strong></span>
         <span style="margin:0 0.5rem;">|</span>
         <a href="<?php echo esc_url(home_url('/rfq/')); ?>" style="color:#f59e0b; text-decoration:none; font-weight:600;">Request For Quote Portal</a>
       </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ProductItem } from '../types/catalog';
-import { MessageSquare, Plus, Check, Scale, Heart } from 'lucide-react';
+import { MessageSquare, FileText, Check, Scale, Heart } from 'lucide-react';
+import { Language, TRANSLATIONS } from '../data/translations';
 
 interface ProductCardProps {
   product: ProductItem;
@@ -11,6 +12,7 @@ interface ProductCardProps {
   onToggleCompare: (product: ProductItem) => void;
   isWishlisted: boolean;
   onToggleWishlist: (product: ProductItem) => void;
+  lang?: Language;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -21,12 +23,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   isCompared,
   onToggleCompare,
   isWishlisted,
-  onToggleWishlist
+  onToggleWishlist,
+  lang = 'en'
 }) => {
+  const t = TRANSLATIONS[lang];
+
+  // Contextual WhatsApp link per User Requirement 23 with centralized phone (+8801711197767)
   const waMessage = encodeURIComponent(
-    `Hello Dhruba Power,\n\nI need an official quote for:\nModel: ${product.name}\nMPN: ${product.mpn}\nBrand: ${product.brand}\n\nPlease share current Bangladesh BDT pricing and delivery timeline.`
+    `Hello Dhruba Power,\n\nI am interested in:\n${product.name}\nMPN: ${product.mpn}\nBrand: ${product.brand}\n\nQuantity: 1\n\nDelivery Location: Barishal / Bangladesh\nPlease provide official BDT quote and lead time.`
   );
-  const waUrl = `https://wa.me/8801700000000?text=${waMessage}`;
+  const waUrl = `https://wa.me/8801711197767?text=${waMessage}`;
 
   return (
     <article 
@@ -36,13 +42,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div>
         {/* Top Badges */}
         <div className="flex justify-between items-center mb-2.5">
-          <span className="text-[11px] font-black uppercase tracking-wider text-sky-700 bg-sky-50 border border-sky-100 px-2 py-0.5 rounded">
+          <span className="text-[11px] font-black uppercase tracking-wider text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded">
             {product.brand}
           </span>
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Ready Stock
+              {t.inStock} <span className="text-slate-400 font-normal">({lang === 'bn' ? 'বরিশাল' : 'Barishal'})</span>
             </span>
             <button
               onClick={(e) => {
@@ -50,7 +56,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 onToggleWishlist(product);
               }}
               className="p-1 rounded text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-              title={isWishlisted ? "In Project BOM" : "Add to Project BOM / Wishlist"}
+              title={isWishlisted ? (lang === 'bn' ? 'বিওএম-এ সংরক্ষিত' : 'In Project BOM') : (lang === 'bn' ? 'বিওএম-এ সংরক্ষণ করুন' : 'Save to Project BOM')}
             >
               <Heart className={`w-3.5 h-3.5 ${isWishlisted ? 'fill-rose-500 text-rose-500' : ''}`} />
             </button>
@@ -72,7 +78,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* MPN & Identifier */}
         <div className="flex items-center justify-between gap-1 mb-1">
-          <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+          <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
             MPN: {product.mpn}
           </span>
           <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]">
@@ -83,18 +89,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {/* Product Title */}
         <h3 
           onClick={() => onSelect(product)}
-          className="font-bold text-sm text-slate-900 leading-snug line-clamp-2 mb-2.5 cursor-pointer hover:text-sky-700 transition-colors min-h-[2.5rem]"
+          className="font-bold text-sm text-slate-900 leading-snug line-clamp-2 mb-2.5 cursor-pointer hover:text-slate-700 transition-colors min-h-[2.5rem]"
           title={product.name}
         >
           {product.name}
         </h3>
 
-        {/* Key Technical Specifications Matrix */}
+        {/* 3-5 Key Technical Specifications Matrix */}
         <div className="flex flex-wrap gap-1.5 mb-3">
           {product.specifications.slice(0, 4).map((spec, idx) => (
             <span 
               key={idx}
-              className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80"
+              className="text-[11px] font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded border border-slate-200"
             >
               {spec.normalized || `${spec.label}: ${spec.value}`}
             </span>
@@ -105,39 +111,43 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Commercial Actions Footer */}
       <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wide">
-            Price on RFQ
+          <span className="text-[11px] font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            {t.priceOnRequest}
           </span>
           <button
             onClick={() => onToggleCompare(product)}
             className={`text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors ${
-              isCompared ? 'text-sky-600 font-bold' : 'text-slate-500 hover:text-slate-800'
+              isCompared ? 'text-slate-900 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <Scale className="w-3 h-3" />
-            {isCompared ? 'Comparing' : 'Compare'}
+            {isCompared ? t.comparing : t.compare}
           </button>
         </div>
 
+        {/* Strict Button Hierarchy:
+            Primary: REQUEST QUOTE (orange)
+            Secondary: WhatsApp (green)
+        */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onAddToRfq(product)}
-            className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`flex-1 py-2 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
               isAddedToRfq 
-                ? 'bg-emerald-600 text-white' 
-                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-2xs'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700' 
+                : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs active:scale-98'
             }`}
             id={`btn-add-rfq-${product.id}`}
           >
             {isAddedToRfq ? (
               <>
                 <Check className="w-3.5 h-3.5" />
-                <span>In Basket</span>
+                <span>{t.addedToRfq}</span>
               </>
             ) : (
               <>
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add to RFQ</span>
+                <FileText className="w-3.5 h-3.5" />
+                <span>{t.requestQuote}</span>
               </>
             )}
           </button>
@@ -146,10 +156,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            title="Ask via WhatsApp"
-            className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md flex items-center justify-center cursor-pointer transition-colors"
+            className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md flex items-center gap-1 transition-colors shadow-xs"
+            title="Chat on WhatsApp (+8801711197767)"
           >
-            <MessageSquare className="w-4 h-4" />
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">WhatsApp</span>
           </a>
         </div>
       </div>
