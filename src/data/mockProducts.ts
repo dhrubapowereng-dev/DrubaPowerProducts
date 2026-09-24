@@ -509,5 +509,43 @@ export const INDUSTRIAL_PRODUCTS: ProductItem[] = [
     documents: [],
     sameSeriesModels: [],
     compatibleAccessories: []
+  },
+
+  // 15. Schneider Electric TeSys D Magnetic Contactor 3P 32A
+  {
+    id: 140,
+    mpn: 'LC1D32M7',
+    mfgCode: 'LC1D32M7',
+    sku: 'DP-SCH-LC1D32M7',
+    name: 'Schneider Electric TeSys D Magnetic Contactor 3P 32A 220V AC Coil 50/60Hz',
+    brand: 'Schneider Electric',
+    series: 'TeSys Deca',
+    category: 'eee',
+    categoryName: 'Magnetic Contactors & Motor Starters',
+    inStock: true,
+    stockLocation: 'Barishal Central Warehouse',
+    image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80',
+    officialUrl: 'https://www.se.com/ww/en/product/LC1D32M7/tesys-d-contactor-3p3-no-ac3-440-v-32-a-220-v-ac-coil/',
+    relatedServiceId: 'panel_board',
+    relatedServiceName: 'Custom HT/LT Switchgear & Panel Boards',
+    specifications: [
+      { key: 'rated_current', label: 'Rated Operational Current (AC-3)', value: '32 A', numeric: 32, unit: 'A', normalized: '32 A' },
+      { key: 'control_voltage', label: 'Control Circuit Voltage', value: '220 V AC 50/60 Hz', numeric: 220, unit: 'V', normalized: '220 V' },
+      { key: 'motor_power', label: 'Motor Power Rating (kW)', value: '15 kW at 380...400 V AC', numeric: 15, unit: 'kW', normalized: '15 kW' },
+      { key: 'poles', label: 'Number of Poles', value: '3P (3 NO)', numeric: 3, unit: 'P', normalized: '3P' },
+      { key: 'aux_contacts', label: 'Auxiliary Contacts', value: '1 NO + 1 NC', normalized: '1 NO + 1 NC' },
+      { key: 'standards', label: 'Applicable Standards', value: 'IEC/EN 60947-4-1, UL 60947-4-1', normalized: 'IEC 60947-4-1' }
+    ],
+    documents: [
+      {
+        id: 'doc-sch-02',
+        title: 'Schneider Electric TeSys D LC1D32M7 Official Technical Datasheet',
+        type: 'datasheet',
+        sourceUrl: 'https://download.schneider-electric.com/files?p_Doc_Ref=LC1D32M7_DATASHEET',
+        size: 512000
+      }
+    ],
+    sameSeriesModels: [],
+    compatibleAccessories: []
   }
 ];

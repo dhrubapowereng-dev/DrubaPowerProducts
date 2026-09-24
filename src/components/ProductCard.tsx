@@ -13,6 +13,7 @@ interface ProductCardProps {
   isWishlisted: boolean;
   onToggleWishlist: (product: ProductItem) => void;
   lang?: Language;
+  onCategoryClick?: (category: string) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -24,7 +25,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onToggleCompare,
   isWishlisted,
   onToggleWishlist,
-  lang = 'en'
+  lang = 'en',
+  onCategoryClick
 }) => {
   const t = TRANSLATIONS[lang];
 
@@ -76,14 +78,33 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           />
         </div>
 
-        {/* MPN & Identifier */}
+        {/* MPN & Category/Series Identifier */}
         <div className="flex items-center justify-between gap-1 mb-1">
           <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
             MPN: {product.mpn}
           </span>
-          <span className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]">
-            {product.series}
-          </span>
+          <div className="flex items-center gap-1 max-w-[140px] truncate">
+            {onCategoryClick ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCategoryClick(product.category);
+                }}
+                className="text-[10px] font-bold text-[#D97706] hover:underline bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 cursor-pointer"
+                title={`Explore /${product.category}`}
+              >
+                /{product.category}
+              </button>
+            ) : (
+              <span className="text-[10px] font-bold text-[#D97706] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                /{product.category}
+              </span>
+            )}
+            <span className="text-[10px] text-slate-500 font-medium truncate" title={product.series}>
+              {product.series}
+            </span>
+          </div>
         </div>
 
         {/* Product Title */}

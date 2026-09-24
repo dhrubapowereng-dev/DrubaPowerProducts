@@ -1,11 +1,30 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { INDUSTRIAL_PRODUCTS } from './data/mockProducts';
-import { ProductItem, RfqItem, RfqRecord, RfqStatus } from './types/catalog';
+import { ProductItem, RfqItem, RfqRecord, RfqStatus, ExpertItem } from './types/catalog';
 import { INITIAL_RFQS } from './data/mockRfqs';
+import { INITIAL_EXPERTS } from './data/mockExperts';
+import { SERVICES_DATA } from './data/servicesData';
+import { PROJECTS_DATA } from './data/projectsData';
+import { BLOGS_DATA } from './data/blogsData';
 import { Language, TRANSLATIONS } from './data/translations';
+
 import { Header } from './components/Header';
 import { HomepageSections } from './components/HomepageSections';
-import { ProductCard } from './components/ProductCard';
+import { PublicFooter } from './components/PublicFooter';
+
+import { AboutPage } from './pages/AboutPage';
+import { ServicesLandingPage } from './pages/ServicesLandingPage';
+import { ServiceDetailPage } from './pages/ServiceDetailPage';
+import { ProjectsLandingPage } from './pages/ProjectsLandingPage';
+import { ProjectDetailPage } from './pages/ProjectDetailPage';
+import { ExpertsLandingPage } from './pages/ExpertsLandingPage';
+import { ExpertDetailPage } from './pages/ExpertDetailPage';
+import { BlogsLandingPage } from './pages/BlogsLandingPage';
+import { BlogDetailPage } from './pages/BlogDetailPage';
+import { ContactPage } from './pages/ContactPage';
+import { ShopPage } from './pages/ShopPage';
+import { ProductDetailPage } from './pages/ProductDetailPage';
+
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { RfqDrawer } from './components/RfqDrawer';
 import { AccountModal } from './components/AccountModal';
@@ -13,22 +32,39 @@ import { AdminDeskModal } from './components/AdminDeskModal';
 import { CompareModal } from './components/CompareModal';
 import { WishlistModal } from './components/WishlistModal';
 import { RfqHistoryModal } from './components/RfqHistoryModal';
-import { PublicFooter } from './components/PublicFooter';
-import { 
-  RotateCcw, 
-  SlidersHorizontal,
-  Search,
-  ArrowRight,
-  Building2,
-  Wrench,
-  Sun,
-  Camera,
-  Layers
-} from 'lucide-react';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const t = TRANSLATIONS[lang];
+
+  // Routing State synced with window.location.pathname
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname || '/';
+    }
+    return '/';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname || '/');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (path: string) => {
+    let cleanPath = path;
+    if (!cleanPath.startsWith('/')) {
+      cleanPath = '/' + cleanPath;
+    }
+
+    if (window.location.pathname !== cleanPath) {
+      window.history.pushState({}, '', cleanPath);
+      setCurrentPath(cleanPath);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Catalog Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -49,12 +85,54 @@ export default function App() {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
 
-  // Authentication State: Gated for Admin / Staff only
+  // Authentication State: Gated for Staff only
   const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(false);
   const [isAdminDeskOpen, setIsAdminDeskOpen] = useState(false);
 
   // Products State (supports in-memory CRUD for staff testing)
   const [catalogProducts, setCatalogProducts] = useState<ProductItem[]>(INDUSTRIAL_PRODUCTS);
+
+  // Dynamic Experts State (CRUD managed by staff, persisted in localStorage)
+  const [experts, setExperts] = useState<ExpertItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('dp_experts_records');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return INITIAL_EXPERTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('dp_experts_records', JSON.stringify(experts));
+    } catch {
+      // ignore
+    }
+  }, [experts]);
+
+  const handleSaveExpert = (expert: ExpertItem) => {
+    setExperts((prev) => {
+      const exists = prev.some((e) => e.id === expert.id);
+      if (exists) {
+        return prev.map((e) => (e.id === expert.id ? expert : e));
+      }
+      return [...prev, expert];
+    });
+  };
+
+  const handleDeleteExpert = (expertId: string) => {
+    setExperts((prev) => prev.filter((e) => e.id !== expertId));
+  };
+
+  const handleToggleExpertActive = (expertId: string) => {
+    setExperts((prev) =>
+      prev.map((e) => (e.id === expertId ? { ...e, active: !e.active } : e))
+    );
+  };
 
   // RFQ Store
   const [rfqs, setRfqs] = useState<RfqRecord[]>(() => {
@@ -77,76 +155,6 @@ export default function App() {
       // ignore
     }
   }, [rfqs]);
-
-  // Derived Filter Options
-  const availableBrands = useMemo(() => {
-    return Array.from(new Set(catalogProducts.map((p) => p.brand))).sort();
-  }, [catalogProducts]);
-
-  const availableCurrents = useMemo(() => {
-    const currents = new Set<string>();
-    catalogProducts.forEach((p) => {
-      const spec = p.specifications.find((s) => s.key === 'rated_current');
-      if (spec && spec.value) currents.add(spec.value);
-    });
-    return Array.from(currents).sort((a, b) => {
-      const numA = parseInt(a, 10) || 0;
-      const numB = parseInt(b, 10) || 0;
-      return numA - numB;
-    });
-  }, [catalogProducts]);
-
-  const availablePoles = useMemo(() => {
-    const poles = new Set<string>();
-    catalogProducts.forEach((p) => {
-      const spec = p.specifications.find((s) => s.key === 'poles');
-      if (spec && spec.normalized) poles.add(spec.normalized);
-    });
-    return Array.from(poles).sort();
-  }, [catalogProducts]);
-
-  // Filtered Products Calculation
-  const filteredProducts = useMemo(() => {
-    return catalogProducts.filter((p) => {
-      if (activeCategory !== 'all' && p.category !== activeCategory) {
-        return false;
-      }
-      if (selectedBrands.length > 0 && !selectedBrands.includes(p.brand)) {
-        return false;
-      }
-      if (selectedCurrents.length > 0) {
-        const spec = p.specifications.find((s) => s.key === 'rated_current');
-        if (!spec || !selectedCurrents.includes(spec.value)) {
-          return false;
-        }
-      }
-      if (selectedPoles.length > 0) {
-        const spec = p.specifications.find((s) => s.key === 'poles');
-        if (!spec || !selectedPoles.includes(spec.normalized || '')) {
-          return false;
-        }
-      }
-      if (inStockOnly && !p.inStock) {
-        return false;
-      }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchesName = p.name.toLowerCase().includes(q);
-        const matchesMpn = p.mpn.toLowerCase().includes(q);
-        const matchesSku = p.sku.toLowerCase().includes(q);
-        const matchesBrand = p.brand.toLowerCase().includes(q);
-        const matchesSeries = p.series.toLowerCase().includes(q);
-        const matchesSpecs = p.specifications.some(
-          (s) => s.label.toLowerCase().includes(q) || s.value.toLowerCase().includes(q)
-        );
-
-        if (!matchesName && !matchesMpn && !matchesSku && !matchesBrand && !matchesSeries && !matchesSpecs) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [catalogProducts, activeCategory, selectedBrands, selectedCurrents, selectedPoles, inStockOnly, searchQuery]);
 
   // RFQ Handlers
   const handleAddToRfq = (product: ProductItem, qty: number = 1) => {
@@ -245,27 +253,350 @@ export default function App() {
     setInStockOnly(false);
   };
 
-  // Navigation scroll helper
-  const handleNavigateSection = (sectionId: string) => {
-    const el = document.getElementById(sectionId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   const totalRfqUnits = rfqBasket.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Normalize current path for route matching (remove trailing slash except for root)
+  const normalizedPath = currentPath.length > 1 && currentPath.endsWith('/')
+    ? currentPath.slice(0, -1)
+    : currentPath;
+
+  // Sync Document Title
+  useEffect(() => {
+    let pageTitle = 'Dhruba Power Platform — Industrial Electrical, Solar & Substation Services';
+
+    if (normalizedPath === '/about') {
+      pageTitle = 'About Us — Dhruba Power & Engineering';
+    } else if (normalizedPath === '/services') {
+      pageTitle = 'Core Engineering Services — Dhruba Power & Engineering';
+    } else if (normalizedPath.startsWith('/services/')) {
+      const slug = normalizedPath.replace('/services/', '');
+      const svc = SERVICES_DATA.find((s) => s.slug === slug || s.id === slug);
+      if (svc) pageTitle = `${svc.title} — Dhruba Power & Engineering`;
+    } else if (normalizedPath === '/projects') {
+      pageTitle = 'Engineering Projects & Installations — Dhruba Power & Engineering';
+    } else if (normalizedPath.startsWith('/projects/')) {
+      const slug = normalizedPath.replace('/projects/', '');
+      const prj = PROJECTS_DATA.find((p) => p.slug === slug || p.id === slug);
+      if (prj) pageTitle = `${prj.title} — Dhruba Power & Engineering`;
+    } else if (normalizedPath === '/experts') {
+      pageTitle = 'Certified Engineering Team — Dhruba Power & Engineering';
+    } else if (normalizedPath.startsWith('/experts/')) {
+      const slug = normalizedPath.replace('/experts/', '');
+      const exp = experts.find((e) => (e.slug || e.id) === slug);
+      if (exp) pageTitle = `${exp.name} — Dhruba Power Expert Profile`;
+    } else if (normalizedPath === '/blogs' || normalizedPath === '/blog') {
+      pageTitle = 'Engineering Knowledge & Technical Articles — Dhruba Power';
+    } else if (normalizedPath.startsWith('/blog/')) {
+      const slug = normalizedPath.replace('/blog/', '');
+      const post = BLOGS_DATA.find((b) => b.slug === slug || b.id === slug);
+      if (post) pageTitle = `${post.title} — Dhruba Power Articles`;
+    } else if (normalizedPath === '/contact') {
+      pageTitle = 'Contact Us — Dhruba Power Barishal Headquarters';
+    } else if (normalizedPath === '/shop' || normalizedPath === '/catalogue') {
+      pageTitle = 'Industrial Equipment Catalogue & Shop — Dhruba Power';
+    } else if (normalizedPath.startsWith('/product/')) {
+      const idOrSlug = normalizedPath.replace('/product/', '');
+      const prod = catalogProducts.find((p) => p.id.toString() === idOrSlug || p.mpn.toLowerCase() === idOrSlug.toLowerCase());
+      if (prod) pageTitle = `${prod.name} (MPN: ${prod.mpn}) — Dhruba Power`;
+    }
+
+    document.title = pageTitle;
+  }, [normalizedPath, catalogProducts, experts]);
+
+  // Route Dispatcher
+  const renderCurrentView = () => {
+    // 1. About Page (/about/)
+    if (normalizedPath === '/about') {
+      return (
+        <AboutPage
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 2. Services Landing Page (/services/)
+    if (normalizedPath === '/services') {
+      return (
+        <ServicesLandingPage
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 3. Six Individual Service Pages (/services/:slug/)
+    if (normalizedPath.startsWith('/services/')) {
+      const serviceSlug = normalizedPath.replace('/services/', '');
+      const matchedService = SERVICES_DATA.find((s) => s.slug === serviceSlug || s.id === serviceSlug);
+
+      if (matchedService) {
+        return (
+          <ServiceDetailPage
+            service={matchedService}
+            lang={lang}
+            onNavigate={navigateTo}
+            onRequestQuote={() => setIsRfqOpen(true)}
+          />
+        );
+      }
+      return (
+        <ServicesLandingPage
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 4. Projects Landing Page (/projects/)
+    if (normalizedPath === '/projects') {
+      return (
+        <ProjectsLandingPage
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 5. Individual Project Pages (/projects/:slug/)
+    if (normalizedPath.startsWith('/projects/')) {
+      const projectSlug = normalizedPath.replace('/projects/', '');
+      const matchedProject = PROJECTS_DATA.find((p) => p.slug === projectSlug || p.id === projectSlug);
+
+      if (matchedProject) {
+        return (
+          <ProjectDetailPage
+            project={matchedProject}
+            lang={lang}
+            onNavigate={navigateTo}
+            onRequestQuote={() => setIsRfqOpen(true)}
+          />
+        );
+      }
+      return (
+        <ProjectsLandingPage
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 6. Experts Landing Page (/experts/)
+    if (normalizedPath === '/experts') {
+      return (
+        <ExpertsLandingPage
+          experts={experts}
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 7. Individual Expert Pages (/experts/:slug/)
+    if (normalizedPath.startsWith('/experts/')) {
+      const expertSlug = normalizedPath.replace('/experts/', '');
+      const matchedExpert = experts.find((e) => (e.slug || e.id) === expertSlug);
+
+      if (matchedExpert) {
+        return (
+          <ExpertDetailPage
+            expert={matchedExpert}
+            lang={lang}
+            onNavigate={navigateTo}
+            onRequestQuote={() => setIsRfqOpen(true)}
+          />
+        );
+      }
+      return (
+        <ExpertsLandingPage
+          experts={experts}
+          lang={lang}
+          onNavigate={navigateTo}
+          onRequestQuote={() => setIsRfqOpen(true)}
+        />
+      );
+    }
+
+    // 8. Blogs Landing Page (/blogs/ or /blog/)
+    if (normalizedPath === '/blogs' || normalizedPath === '/blog') {
+      return (
+        <BlogsLandingPage
+          lang={lang}
+          onNavigate={navigateTo}
+        />
+      );
+    }
+
+    // 9. Individual Blog Post Page (/blog/:slug/)
+    if (normalizedPath.startsWith('/blog/')) {
+      const blogSlug = normalizedPath.replace('/blog/', '');
+      const matchedBlog = BLOGS_DATA.find((b) => b.slug === blogSlug || b.id === blogSlug);
+
+      if (matchedBlog) {
+        return (
+          <BlogDetailPage
+            blog={matchedBlog}
+            lang={lang}
+            onNavigate={navigateTo}
+            onRequestQuote={() => setIsRfqOpen(true)}
+          />
+        );
+      }
+      return (
+        <BlogsLandingPage
+          lang={lang}
+          onNavigate={navigateTo}
+        />
+      );
+    }
+
+    // 10. Contact Page (/contact/)
+    if (normalizedPath === '/contact') {
+      return (
+        <ContactPage
+          lang={lang}
+          onNavigate={navigateTo}
+        />
+      );
+    }
+
+    // 11. Shop / Catalogue Page (/shop/ or /catalogue/)
+    if (normalizedPath === '/shop' || normalizedPath === '/catalogue') {
+      return (
+        <ShopPage
+          catalogProducts={catalogProducts}
+          lang={lang}
+          onNavigate={navigateTo}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToRfq={handleAddToRfq}
+          isAddedToRfq={(id) => rfqBasket.some((item) => item.productId === id)}
+          onToggleCompare={handleToggleCompare}
+          isCompared={(id) => comparedProducts.some((p) => p.id === id)}
+          onToggleWishlist={handleToggleWishlist}
+          isWishlisted={(id) => wishlistProducts.some((p) => p.id === id)}
+          onOpenRfq={() => setIsRfqOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeCategory={activeCategory}
+          onCategorySelect={setActiveCategory}
+          selectedBrands={selectedBrands}
+          onSelectedBrandsChange={setSelectedBrands}
+          selectedCurrents={selectedCurrents}
+          onSelectedCurrentsChange={setSelectedCurrents}
+          selectedPoles={selectedPoles}
+          onSelectedPolesChange={setSelectedPoles}
+          inStockOnly={inStockOnly}
+          onInStockOnlyChange={setInStockOnly}
+          onResetFilters={handleResetFilters}
+        />
+      );
+    }
+
+    // 12. Individual Product Page (/product/:id/)
+    if (normalizedPath.startsWith('/product/')) {
+      const productIdStr = normalizedPath.replace('/product/', '');
+      const prodId = parseInt(productIdStr, 10);
+      const matchedProd = catalogProducts.find((p) => p.id === prodId || p.mpn.toLowerCase() === productIdStr.toLowerCase());
+
+      if (matchedProd) {
+        return (
+          <ProductDetailPage
+            product={matchedProd}
+            lang={lang}
+            onNavigate={navigateTo}
+            onAddToRfq={handleAddToRfq}
+            onQuickQuote={handleQuickQuote}
+            isAddedToRfq={rfqBasket.some((item) => item.productId === matchedProd.id)}
+            onSelectModel={(id) => {
+              const target = catalogProducts.find((p) => p.id === id);
+              if (target) {
+                navigateTo(`/product/${target.id}/`);
+              }
+            }}
+            isWishlisted={wishlistProducts.some((p) => p.id === matchedProd.id)}
+            onToggleWishlist={handleToggleWishlist}
+            isCompared={comparedProducts.some((p) => p.id === matchedProd.id)}
+            onToggleCompare={handleToggleCompare}
+          />
+        );
+      }
+      return (
+        <ShopPage
+          catalogProducts={catalogProducts}
+          lang={lang}
+          onNavigate={navigateTo}
+          onSelectProduct={(p) => setSelectedProduct(p)}
+          onAddToRfq={handleAddToRfq}
+          isAddedToRfq={(id) => rfqBasket.some((item) => item.productId === id)}
+          onToggleCompare={handleToggleCompare}
+          isCompared={(id) => comparedProducts.some((p) => p.id === id)}
+          onToggleWishlist={handleToggleWishlist}
+          isWishlisted={(id) => wishlistProducts.some((p) => p.id === id)}
+          onOpenRfq={() => setIsRfqOpen(true)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeCategory={activeCategory}
+          onCategorySelect={setActiveCategory}
+          selectedBrands={selectedBrands}
+          onSelectedBrandsChange={setSelectedBrands}
+          selectedCurrents={selectedCurrents}
+          onSelectedCurrentsChange={setSelectedCurrents}
+          selectedPoles={selectedPoles}
+          onSelectedPolesChange={setSelectedPoles}
+          inStockOnly={inStockOnly}
+          onInStockOnlyChange={setInStockOnly}
+          onResetFilters={handleResetFilters}
+        />
+      );
+    }
+
+    // Default: Root Homepage (Preserved Main Website + Integrated Subsystems)
+    return (
+      <main className="space-y-16">
+        <HomepageSections
+          lang={lang}
+          onExploreProducts={() => navigateTo('/shop/')}
+          onRequestQuote={() => setIsRfqOpen(true)}
+          onSelectCategory={(cat) => {
+            setActiveCategory(cat);
+            navigateTo('/shop/');
+          }}
+          catalogProducts={catalogProducts}
+          experts={experts}
+          onProductClick={(p) => navigateTo(`/product/${p.id}/`)}
+          onQuickQuote={(p) => {
+            handleAddToRfq(p, 1);
+            setIsRfqOpen(true);
+          }}
+          onAddToRfq={(p) => handleAddToRfq(p, 1)}
+          isAddedToRfq={(id) => rfqBasket.some((item) => item.productId === id)}
+          onToggleCompare={handleToggleCompare}
+          isCompared={(id) => comparedProducts.some((p) => p.id === id)}
+          onToggleWishlist={handleToggleWishlist}
+          isWishlisted={(id) => wishlistProducts.some((p) => p.id === id)}
+          onNavigate={navigateTo}
+        />
+      </main>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 antialiased selection:bg-amber-100">
       
-      {/* 1. Public Header (2-Level Navigation, Zero Admin Badges) */}
+      {/* 1. Public Header with Unclipped Submenus & Real Navigation Links */}
       <Header
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         activeCategory={activeCategory}
         onCategorySelect={(cat) => {
           setActiveCategory(cat);
-          handleNavigateSection('catalogue');
+          navigateTo('/shop/');
         }}
         rfqCount={totalRfqUnits}
         onOpenRfq={() => setIsRfqOpen(true)}
@@ -275,294 +606,29 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
         onOpenAdminDesk={() => setIsAdminDeskOpen(true)}
-        onNavigateSection={handleNavigateSection}
+        onNavigate={navigateTo}
         isLoggedIn={isStaffLoggedIn}
         userRole={isStaffLoggedIn ? 'admin' : 'visitor'}
         lang={lang}
         onToggleLang={() => setLang(lang === 'en' ? 'bn' : 'en')}
       />
 
-      {/* 2. Authentic Homepage Sections (Hero, About, 6 Core Services, Work Process, Experts, Projects, Testimonials, Contact) */}
-      <HomepageSections
-        lang={lang}
-        onExploreProducts={() => handleNavigateSection('catalogue')}
-        onRequestQuote={() => setIsRfqOpen(true)}
-        onSelectCategory={(cat) => {
-          setActiveCategory(cat);
-          handleNavigateSection('catalogue');
-        }}
-      />
+      {/* 2. Page View Container */}
+      <div className="flex-1">
+        {renderCurrentView()}
+      </div>
 
-      {/* 3. Public Industrial Product Catalog Showcase */}
-      <section id="catalogue" className="py-12 bg-slate-100/70 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4">
-          
-          {/* Section Heading & Category Tabs */}
-          <div className="flex flex-wrap items-end justify-between gap-4 pb-6 mb-8 border-b border-slate-200">
-            <div>
-              <div className="text-xs font-bold text-[#D97706] uppercase tracking-wider mb-1">
-                {lang === 'bn' ? 'সরাসরি সরবরাহ ও ওরিজিনাল পার্টস' : 'Commercial Equipment Supply'}
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] tracking-tight">
-                {lang === 'bn' ? 'ইন্ডাস্ট্রিয়াল প্রডাক্ট ক্যাটালগ' : 'Engineering Equipment Catalogue'}
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 max-w-xl">
-                {lang === 'bn'
-                  ? 'ABB, Schneider, Siemens, Hikvision ও Growatt-এর আসল সুইচগিয়ার, সিসিটিভি ও সোলার উপাদান সরাসরি বরিশাল ওয়ারহাউজ থেকে।'
-                  : 'Independent manufacturer part numbers with verified technical ratings, CAD datasheets, and Barishal warehouse availability.'}
-              </p>
-            </div>
-
-            {/* Division Switcher */}
-            <div className="flex flex-wrap gap-2">
-              {[
-                { id: 'all', label: t.allProducts, icon: Layers },
-                { id: 'eee', label: t.eee, icon: Wrench },
-                { id: 'cctv', label: t.cctv, icon: Camera },
-                { id: 'solar', label: t.solar, icon: Sun }
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeCategory === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => {
-                      setActiveCategory(tab.id);
-                      setSelectedCurrents([]);
-                      setSelectedPoles([]);
-                    }}
-                    className={`px-3.5 py-2 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                      isActive 
-                        ? 'bg-[#0F172A] text-white shadow-xs' 
-                        : 'bg-white hover:bg-slate-200/80 text-slate-700 border border-slate-300'
-                    }`}
-                  >
-                    <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#D97706]' : 'text-slate-500'}`} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 2-Column Grid: Left Filters + Right Products */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-            
-            {/* Filter Sidebar */}
-            <aside className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
-                  <span>{t.technicalFilters}</span>
-                </span>
-
-                {(selectedBrands.length > 0 || selectedCurrents.length > 0 || selectedPoles.length > 0 || inStockOnly || searchQuery) && (
-                  <button
-                    onClick={handleResetFilters}
-                    className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>{t.resetFilters}</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Ready Stock Toggle */}
-              <div className="bg-emerald-50/80 border border-emerald-200 rounded-lg p-3">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={inStockOnly}
-                    onChange={(e) => setInStockOnly(e.target.checked)}
-                    className="w-4 h-4 rounded text-[#16A673] focus:ring-[#16A673] accent-[#16A673]"
-                  />
-                  <span className="text-xs font-bold text-emerald-950">
-                    {t.readyStockOnly}
-                  </span>
-                </label>
-              </div>
-
-              {/* Brand Filter */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
-                  {t.brands}
-                </label>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {availableBrands.map((brand) => (
-                    <label key={brand} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer hover:text-slate-900">
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand)}
-                        onChange={(e) => {
-                          if (e.target.checked) setSelectedBrands([...selectedBrands, brand]);
-                          else setSelectedBrands(selectedBrands.filter((b) => b !== brand));
-                        }}
-                        className="rounded text-[#0F172A] accent-[#0F172A]"
-                      />
-                      <span>{brand}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rated Current Filter (EEE Category) */}
-              {activeCategory === 'eee' && availableCurrents.length > 0 && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
-                    {t.ratedCurrent}
-                  </label>
-                  <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
-                    {availableCurrents.map((cur) => (
-                      <label key={cur} className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedCurrents.includes(cur)}
-                          onChange={(e) => {
-                            if (e.target.checked) setSelectedCurrents([...selectedCurrents, cur]);
-                            else setSelectedCurrents(selectedCurrents.filter((c) => c !== cur));
-                          }}
-                          className="rounded text-[#0F172A] accent-[#0F172A]"
-                        />
-                        <span className="font-mono text-[11px]">{cur}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Poles Filter */}
-              {activeCategory === 'eee' && availablePoles.length > 0 && (
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
-                    {t.poles}
-                  </label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {availablePoles.map((pole) => {
-                      const isSel = selectedPoles.includes(pole);
-                      return (
-                        <button
-                          key={pole}
-                          type="button"
-                          onClick={() => {
-                            if (isSel) setSelectedPoles(selectedPoles.filter((p) => p !== pole));
-                            else setSelectedPoles([...selectedPoles, pole]);
-                          }}
-                          className={`px-2.5 py-1 text-xs font-bold rounded cursor-pointer transition-colors ${
-                            isSel
-                              ? 'bg-[#0F172A] text-white'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          {pole}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Assistance Callout */}
-              <div className="pt-4 border-t border-slate-200/80 text-xs text-slate-500 space-y-2">
-                <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-[#D97706]" />
-                  <span>{lang === 'bn' ? 'প্রজেক্ট টেন্ডার শিডিউল?' : 'Have a Project Schedule?'}</span>
-                </div>
-                <p className="text-[11px] leading-relaxed">
-                  {lang === 'bn'
-                    ? 'আপনার প্রজেক্টের BOQ এক্সেল বা স্পেসিফিকেশন শিডিউল আপলোড করতে RFQ বাস্কেটে যান।'
-                    : 'Submit your complete tender BOQ or AutoCAD drawing via RFQ basket for direct pricing.'}
-                </p>
-                <button
-                  onClick={() => setIsRfqOpen(true)}
-                  className="text-xs font-bold text-[#D97706] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>{lang === 'bn' ? 'BOQ আপলোড করুন' : 'Upload BOQ Schedule'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </aside>
-
-            {/* Product Grid */}
-            <div className="lg:col-span-3 space-y-4">
-              <div className="flex justify-between items-center bg-white px-4 py-3 rounded-lg border border-slate-200">
-                <span className="text-xs font-bold text-slate-700">
-                  {filteredProducts.length} {t.modelsFound}
-                </span>
-                <span className="text-xs text-slate-500 font-mono">
-                  Barishal Division Commercial Desk
-                </span>
-              </div>
-
-              {filteredProducts.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-xl p-12 text-center space-y-4">
-                  <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
-                    <Search className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-base text-slate-900">
-                      {searchQuery ? `No exact catalog match for "${searchQuery}"` : t.noProductsFound}
-                    </h3>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
-                      Dhruba Power maintains authorized distribution links with ABB, Schneider, Siemens, and Hikvision. Even unlisted exact MPNs can be sourced directly.
-                    </p>
-                  </div>
-                  <div className="flex justify-center gap-3 pt-2">
-                    <button
-                      onClick={handleResetFilters}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg cursor-pointer"
-                    >
-                      {t.resetFilters}
-                    </button>
-                    <a
-                      href={`https://wa.me/8801711197767?text=${encodeURIComponent(`Hello Dhruba Power Sales Desk, I am sourcing industrial equipment: "${searchQuery || 'custom specifications'}" for quotation.`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 bg-[#16A673] hover:bg-[#0F8A60] text-white text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1.5"
-                    >
-                      <span>Direct WhatsApp Sourcing</span>
-                    </a>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredProducts.map((product) => {
-                    const isAdded = rfqBasket.some((i) => i.productId === product.id);
-                    const isCompared = comparedProducts.some((p) => p.id === product.id);
-                    const isWishlisted = wishlistProducts.some((p) => p.id === product.id);
-
-                    return (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        onSelect={(p) => setSelectedProduct(p)}
-                        onAddToRfq={handleAddToRfq}
-                        isAddedToRfq={isAdded}
-                        isCompared={isCompared}
-                        onToggleCompare={handleToggleCompare}
-                        isWishlisted={isWishlisted}
-                        onToggleWishlist={handleToggleWishlist}
-                        lang={lang}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Public Footer (Authentic Company Details, Zero Admin Links) */}
+      {/* 3. Public Footer with Authentic Company Details & Links */}
       <PublicFooter
         lang={lang}
         onSelectCategory={(cat) => {
           setActiveCategory(cat);
-          handleNavigateSection('catalogue');
+          navigateTo('/shop/');
         }}
-        onNavigateSection={handleNavigateSection}
+        onNavigate={navigateTo}
       />
 
-      {/* 5. Product Detail Modal */}
+      {/* 4. Product Detail Modal (for quick overlays) */}
       <ProductDetailModal
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
@@ -580,7 +646,7 @@ export default function App() {
         lang={lang}
       />
 
-      {/* 6. RFQ Basket Drawer */}
+      {/* 5. RFQ Basket Drawer */}
       <RfqDrawer
         isOpen={isRfqOpen}
         onClose={() => setIsRfqOpen(false)}
@@ -604,7 +670,7 @@ export default function App() {
         onToggleLogin={() => setIsAccountOpen(true)}
       />
 
-      {/* 7. Compare Modal */}
+      {/* 6. Compare Modal */}
       <CompareModal
         isOpen={isCompareOpen}
         onClose={() => setIsCompareOpen(false)}
@@ -614,7 +680,7 @@ export default function App() {
         onAddToRfq={handleAddToRfq}
       />
 
-      {/* 8. Wishlist / Project BOM Modal */}
+      {/* 7. Wishlist / Project BOM Modal */}
       <WishlistModal
         isOpen={isWishlistOpen}
         onClose={() => setIsWishlistOpen(false)}
@@ -629,7 +695,7 @@ export default function App() {
         }}
       />
 
-      {/* 9. Customer RFQ History Lookup Modal */}
+      {/* 8. Customer RFQ History Lookup Modal */}
       <RfqHistoryModal
         isOpen={isCustomerHistoryOpen}
         onClose={() => setIsCustomerHistoryOpen(false)}
@@ -641,7 +707,7 @@ export default function App() {
         }}
       />
 
-      {/* 10. Account Modal (Customer tracking + Staff login) */}
+      {/* 9. Account Modal (Customer tracking + Staff login) */}
       <AccountModal
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
@@ -681,22 +747,23 @@ export default function App() {
         lang={lang}
       />
 
-      {/* 11. Gated Operations Desk (Conditionally rendered ONLY when staff is logged in) */}
+      {/* 10. Gated Operations Desk (Conditionally rendered ONLY when staff is logged in) */}
       {isStaffLoggedIn && (
         <AdminDeskModal
           isOpen={isAdminDeskOpen}
           onClose={() => setIsAdminDeskOpen(false)}
           rfqs={rfqs}
           products={catalogProducts}
+          experts={experts}
           onUpdateRfqStatus={handleUpdateRfqStatus}
           onConvertToWcOrder={handleConvertToWcOrder}
           onSaveProduct={(savedP) => {
             setCatalogProducts((prev) => {
               const idx = prev.findIndex((p) => p.id === savedP.id);
               if (idx >= 0) {
-                const next = [...prev];
-                next[idx] = savedP;
-                return next;
+                 const next = [...prev];
+                 next[idx] = savedP;
+                 return next;
               }
               return [savedP, ...prev];
             });
@@ -704,6 +771,9 @@ export default function App() {
           onDeleteProduct={(id) => {
             setCatalogProducts((prev) => prev.filter((p) => p.id !== id));
           }}
+          onSaveExpert={handleSaveExpert}
+          onDeleteExpert={handleDeleteExpert}
+          onToggleExpertActive={handleToggleExpertActive}
         />
       )}
     </div>

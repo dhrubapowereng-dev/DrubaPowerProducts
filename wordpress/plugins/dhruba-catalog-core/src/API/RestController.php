@@ -120,6 +120,13 @@ final class RestController
             'callback'            => [$this, 'handle_health_check'],
             'permission_callback' => [$this, 'check_admin_permissions'],
         ]);
+
+        // 7. Experts Directory Endpoint (Active team with individual WhatsApp links)
+        register_rest_route(self::NAMESPACE, '/experts', [
+            'methods'             => WP_REST_Server::READABLE,
+            'callback'            => [$this, 'handle_get_experts'],
+            'permission_callback' => '__return_true',
+        ]);
     }
 
     public function handle_search(WP_REST_Request $request): WP_REST_Response
@@ -450,5 +457,15 @@ final class RestController
     public function check_admin_permissions(): bool
     {
         return current_user_can('manage_options');
+    }
+
+    public function handle_get_experts(WP_REST_Request $request): WP_REST_Response
+    {
+        $experts = $this->plugin->get_experts()->get_active_experts();
+        return new WP_REST_Response([
+            'success' => true,
+            'count'   => count($experts),
+            'experts' => $experts,
+        ], 200);
     }
 }

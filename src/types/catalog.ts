@@ -7,6 +7,22 @@ export interface TechnicalSpecification {
   normalized?: string;
 }
 
+export interface ExpertItem {
+  id: string;
+  slug?: string;
+  name: string;
+  photograph: string;
+  designation: string;
+  department: string;
+  shortBio: string;
+  whatsappNumber: string;
+  displayOrder: number;
+  active: boolean;
+  email?: string;
+  certifications?: string[];
+  experienceYears?: number;
+}
+
 export interface TechnicalDocument {
   id: string;
   title: string;

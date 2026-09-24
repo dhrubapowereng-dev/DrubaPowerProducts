@@ -14,7 +14,13 @@ if (!defined('ABSPATH')) {
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:2.5rem; margin-bottom:2.5rem;">
       <!-- Col 1: About -->
       <div>
-        <div style="color:#ffffff; font-weight:800; font-size:1.125rem; margin-bottom:1rem;">DHRUBA POWER</div>
+        <div style="margin-bottom:1rem; display:inline-block; background:#ffffff; padding:6px 12px; border-radius:4px;">
+          <img 
+            src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/dhrubapowerlogo.png'); ?>" 
+            alt="Dhruba Power &amp; Engineering" 
+            style="height:36px; width:auto; max-width:180px; object-fit:contain; display:block;" 
+          />
+        </div>
         <p style="line-height:1.6; font-size:0.8125rem;">
           Specialized distributor & engineering supplier of high-reliability low & medium voltage electrical switchgear, industrial automation, CCTV surveillance, and solar energy systems in Bangladesh.
         </p>

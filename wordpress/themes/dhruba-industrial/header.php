@@ -38,13 +38,13 @@ if (!defined('ABSPATH')) {
 
   <!-- Main Navigation & Search -->
   <div class="dp-container" style="padding-top:0.75rem; padding-bottom:0.75rem; display:flex; align-items:center; justify-content:space-between; gap:1.5rem;">
-    <!-- Logo -->
+    <!-- Official Logo Asset -->
     <a href="<?php echo esc_url(home_url('/')); ?>" style="text-decoration:none; display:flex; align-items:center; gap:0.5rem;">
-      <div style="background:#0f172a; color:#ffffff; font-weight:900; font-size:1.25rem; padding:0.25rem 0.6rem; border-radius:4px; letter-spacing:-0.5px;">DP</div>
-      <div>
-        <div style="font-weight:800; font-size:1.15rem; color:#0f172a; line-height:1.1;">DHRUBA POWER</div>
-        <div style="font-size:0.7rem; color:#64748b; letter-spacing:0.5px; text-transform:uppercase;">Engineering & Industrial Catalog</div>
-      </div>
+      <img 
+        src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/dhrubapowerlogo.png'); ?>" 
+        alt="<?php echo esc_attr(get_bloginfo('name', 'display')); ?>" 
+        style="height:44px; width:auto; max-width:220px; object-fit:contain;" 
+      />
     </a>
 
     <!-- Big Industrial Search Box -->

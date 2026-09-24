@@ -66,6 +66,7 @@ final class Plugin
     private Search\SearchInterface $search;
     private API\RestController $api;
     private Admin\AdminDashboard $admin;
+    private Experts\ExpertManager $experts;
 
     public static function instance(): Plugin
     {
@@ -91,6 +92,7 @@ final class Plugin
         $this->documents    = new Documents\DocumentManager();
         $this->relations    = new Relations\RelationshipManager();
         $this->rfq          = new RFQ\RfqService();
+        $this->experts      = new Experts\ExpertManager();
 
         // Search engine resolution via SearchManager strategy context
         $this->search       = new Search\SearchManager();
@@ -106,6 +108,7 @@ final class Plugin
 
         add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
         add_action('init', [$this->taxonomies, 'register']);
+        $this->experts->register();
         add_action('rest_api_init', [$this->api, 'register_routes']);
 
         // Declare HPOS Compatibility (WooCommerce High-Performance Order Storage)
@@ -152,6 +155,7 @@ final class Plugin
     public function get_relations(): Relations\RelationshipManager { return $this->relations; }
     public function get_rfq(): RFQ\RfqService { return $this->rfq; }
     public function get_search(): Search\SearchInterface { return $this->search; }
+    public function get_experts(): Experts\ExpertManager { return $this->experts; }
 }
 
 function dhruba_catalog(): Plugin

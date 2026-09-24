@@ -3,14 +3,17 @@
 :root {
   --dp-navy: #0F172A;
   --dp-navy-2: #172033;
+  --dp-navy-dark: #0B1120;
   --dp-green: #16A673;
   --dp-green-dark: #0F8A60;
-  --dp-orange: #F59E0B;
-  --dp-orange-dark: #D97706;
+  --dp-orange: #D97706;
+  --dp-orange-dark: #B45309;
+  --dp-gold: #F59E0B;
   --dp-white: #FFFFFF;
   --dp-bg: #F8FAFC;
   --dp-surface: #FFFFFF;
   --dp-border: #E2E8F0;
+  --dp-border-dark: #CBD5E1;
   --dp-text: #0F172A;
   --dp-text-muted: #64748B;
   --dp-success: #16A673;
@@ -24,3 +27,33 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Continuous Marquee Animation: Right to Left seamless scroll */
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.dp-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-rtl 28s linear infinite;
+}
+
+.dp-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Submenu dropdown visibility & stacking context fix (#8) */
+header,
+.site-header {
+  overflow: visible !important;
+  z-index: 50 !important;
+}
+
+.dp-dropdown-menu {
+  z-index: 100 !important;
+}

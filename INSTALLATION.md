@@ -19,8 +19,10 @@ This document describes how to deploy the **Dhruba Power** industrial catalog en
 
 | Package | Path | Type | Function |
 | :--- | :--- | :--- | :--- |
-| `dhruba-catalog-core.zip` | `wp-content/plugins/` | Plugin | Database schemas, custom tables, Meilisearch indexer, RFQ engine, WooCommerce order bridge, REST API. |
-| `dhruba-industrial-theme.zip` | `wp-content/themes/` | Theme | Industrial design system, category-aware archive templates, single product specification matrices, mobile sticky action bar. |
+| `dhruba-catalog-core.zip` | `wp-content/plugins/` | Plugin | Database schemas, custom tables, Meilisearch indexer, RFQ engine, Expert management with WhatsApp numbers, WooCommerce order bridge, REST API. |
+| `socialnomic-solar-child.zip` | `wp-content/themes/` | Child Theme | **(Recommended)** Preserves existing `socialnomic-solar` design, Elementor templates, and header/footer while fixing submenu z-index/clipping and adding technical catalog templates & 4-card carousels. |
+| `dhruba-industrial-theme.zip` | `wp-content/themes/` | Theme | Standalone industrial design system, category-aware archive templates, single product specification matrices, mobile sticky action bar. |
+| `DHRUBA-POWER-FINAL-PRODUCTION.zip` | Root Bundle | Master Package | Complete deployment bundle containing plugin, child theme, standalone theme, importer ETL, and all documentation. |
 
 ---
 
@@ -28,18 +30,21 @@ This document describes how to deploy the **Dhruba Power** industrial catalog en
 
 ### Step A: Install the Plugin (`dhruba-catalog-core`)
 1. In your WordPress Admin Dashboard, navigate to **Plugins > Add New > Upload Plugin**.
-2. Select `dhruba-catalog-core.zip` and click **Install Now**.
+2. Select `dhruba-catalog-core.zip` (or `dhruba-power-catalog-core.zip`) and click **Install Now**.
 3. Click **Activate Plugin**.
-4. Upon activation, the plugin automatically provisions the 4 custom optimized database tables:
-   - `{$wpdb->prefix}dp_specs` (for 50,000+ attribute queries without `wp_postmeta` bottleneck)
-   - `{$wpdb->prefix}dp_documents` (for SHA-256 verified PDF datasheets & CAD diagrams)
-   - `{$wpdb->prefix}dp_rfqs` (for industrial procurement quotations)
-   - `{$wpdb->prefix}dp_rfq_items` (for quote line items and contractor specs)
+4. Upon activation, the plugin automatically:
+   - Provisions the 4 custom optimized database tables (`dp_specs`, `dp_documents`, `dp_rfqs`, `dp_rfq_items`).
+   - Registers the Certified Experts custom post type (`dp_expert`) with individual WhatsApp consultation links.
+   - Bootstraps REST API endpoints (`/wp-json/dhruba/v1/products`, `/wp-json/dhruba/v1/rfq`, `/wp-json/dhruba/v1/experts`).
 
-### Step B: Install the Theme (`dhruba-industrial`)
+### Step B: Install the Theme
+**For existing production sites running Socialnomic Solar:**
 1. In your WordPress Admin Dashboard, navigate to **Appearance > Themes > Add New > Upload Theme**.
-2. Select `dhruba-industrial-theme.zip` and click **Install Now**.
-3. Click **Activate**.
+2. Select `socialnomic-solar-child.zip` and click **Install Now**.
+3. Click **Activate**. This retains all current Elementor pages, header styling, and typography without modifying parent theme files.
+
+**For fresh standalone installations:**
+1. Select `dhruba-industrial-theme.zip`, click **Install Now**, and **Activate**.
 
 ### Step C: Configure Pages & Permalinks
 1. Navigate to **Settings > Permalinks** and ensure **Post name** (`/%postname%/`) is selected. Click **Save Changes** to flush rewrite rules.

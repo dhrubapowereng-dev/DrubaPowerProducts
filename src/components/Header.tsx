@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, 
   FileText, 
@@ -9,13 +9,17 @@ import {
   Camera, 
   Sun, 
   Heart,
-  MessageSquare,
-  User,
-  Menu,
-  X,
-  ChevronDown,
-  Mail,
-  Layers
+  MessageSquare, 
+  User, 
+  Menu, 
+  X, 
+  ChevronDown, 
+  Mail, 
+  Layers,
+  Activity,
+  Wrench,
+  Shield,
+  Cpu
 } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/translations';
 
@@ -32,7 +36,7 @@ interface HeaderProps {
   onOpenWishlist: () => void;
   onOpenAccount: () => void;
   onOpenAdminDesk?: () => void;
-  onNavigateSection?: (sectionId: string) => void;
+  onNavigate: (path: string) => void;
   isLoggedIn: boolean;
   userRole?: 'visitor' | 'customer' | 'admin';
   lang: Language;
@@ -52,50 +56,86 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenWishlist,
   onOpenAccount,
   onOpenAdminDesk,
-  onNavigateSection,
+  onNavigate,
   isLoggedIn,
   userRole = 'visitor',
   lang,
   onToggleLang
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [productsDropdownOpen, setProductsDropdownOpen] = useState(false);
+  const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
+  const [shopDropdownOpen, setShopDropdownOpen] = useState(false);
+  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
+  const [mobileShopOpen, setMobileShopOpen] = useState(false);
+
+  const servicesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const t = TRANSLATIONS[lang];
 
-  const handleNav = (target: string) => {
+  const handleNav = (targetPath: string) => {
     setMobileMenuOpen(false);
-    if (onNavigateSection) {
-      onNavigateSection(target);
+    setServicesDropdownOpen(false);
+    setShopDropdownOpen(false);
+    setMobileServicesOpen(false);
+    setMobileShopOpen(false);
+    if (onNavigate) {
+      onNavigate(targetPath);
     }
   };
 
+  const handleServiceMouseEnter = () => {
+    if (servicesTimeoutRef.current) clearTimeout(servicesTimeoutRef.current);
+    setServicesDropdownOpen(true);
+  };
+
+  const handleServiceMouseLeave = () => {
+    servicesTimeoutRef.current = setTimeout(() => {
+      setServicesDropdownOpen(false);
+    }, 180);
+  };
+
+  const handleShopMouseEnter = () => {
+    if (shopTimeoutRef.current) clearTimeout(shopTimeoutRef.current);
+    setShopDropdownOpen(true);
+  };
+
+  const handleShopMouseLeave = () => {
+    shopTimeoutRef.current = setTimeout(() => {
+      setShopDropdownOpen(false);
+    }, 180);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (servicesTimeoutRef.current) clearTimeout(servicesTimeoutRef.current);
+      if (shopTimeoutRef.current) clearTimeout(shopTimeoutRef.current);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs">
+    <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs overflow-visible">
       {/* 1. Top Utility Bar (Navy: #0F172A) */}
       <div className="bg-[#0F172A] text-slate-300 text-xs py-1.5 px-4 border-b border-slate-800">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
           
-          {/* Location & Certification */}
+          {/* Headline & Location */}
           <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs">
-            <span className="flex items-center gap-1 text-slate-200 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>{t.location}</span>
-            </span>
-            <span className="text-slate-600 hidden sm:inline">|</span>
-            <span className="hidden md:inline text-slate-400">
-              {t.authSupply}
+            <span className="flex items-center gap-1.5 text-slate-200 font-medium">
+              <MapPin className="w-3.5 h-3.5 text-[#F59E0B] shrink-0" />
+              <span>{lang === 'bn' ? 'বরিশাল, বাংলাদেশ — ইলেকট্রিক্যাল, সোলার ও সাবস্টেশন সাপোর্ট' : 'Electrical, solar, substation & industrial service support in Barishal'}</span>
             </span>
           </div>
 
-          {/* Contact Details & Utilities */}
+          {/* Contact Details & Actions */}
           <div className="flex items-center gap-3 sm:gap-4 text-[11px]">
-            {/* Real Hotline */}
+            {/* Phone */}
             <a 
               href="tel:+8801711197767" 
               className="flex items-center gap-1 text-slate-300 hover:text-white transition-colors"
             >
-              <Phone className="w-3 h-3 text-amber-400 shrink-0" />
-              <span>{t.hotline}: <strong className="text-white">+880 1711-197767</strong></span>
+              <Phone className="w-3 h-3 text-[#F59E0B] shrink-0" />
+              <span>+880 1711-197767</span>
             </a>
 
             <span className="text-slate-700 hidden sm:inline">|</span>
@@ -109,17 +149,17 @@ export const Header: React.FC<HeaderProps> = ({
               <span>info@dhrubapower.com</span>
             </a>
 
-            <span className="text-slate-700 hidden lg:inline">|</span>
+            <span className="text-slate-700 hidden sm:inline">|</span>
 
-            {/* WhatsApp Link */}
+            {/* Direct WhatsApp Quote */}
             <a 
-              href="https://wa.me/8801711197767" 
+              href="https://wa.me/8801711197767?text=Hello%20Dhruba%20Power%2C%20I%20want%20a%20quote." 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="hidden md:flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
+              className="hidden sm:flex items-center gap-1 text-[#16A673] hover:text-emerald-300 transition-colors font-semibold"
             >
-              <MessageSquare className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span>WhatsApp</span>
+              <MessageSquare className="w-3 h-3 text-[#16A673] shrink-0" />
+              <span>WhatsApp Quote</span>
             </a>
 
             <span className="text-slate-700">|</span>
@@ -127,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Language Switcher: EN | বাংলা */}
             <button
               onClick={onToggleLang}
-              className="flex items-center gap-1 text-xs font-bold text-amber-400 hover:text-amber-300 cursor-pointer px-1 py-0.5 rounded transition-colors"
+              className="flex items-center gap-1 text-xs font-bold text-[#F59E0B] hover:text-amber-300 cursor-pointer px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700 transition-colors"
               title="Switch Language / ভাষা পরিবর্তন করুন"
               id="btn-lang-toggle"
             >
@@ -136,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <span className="text-slate-700">|</span>
 
-            {/* Account / Customer Portal */}
+            {/* Account / Portal Login */}
             <button
               onClick={onOpenAccount}
               className="flex items-center gap-1 text-slate-200 hover:text-white font-medium cursor-pointer transition-colors"
@@ -148,6 +188,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </button>
 
+            {/* Protected Admin Desk: Gated for Authenticated Staff Only */}
             {isLoggedIn && userRole === 'admin' && onOpenAdminDesk && (
               <>
                 <span className="text-slate-700">|</span>
@@ -164,33 +205,27 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 2. Main Navigation Bar */}
+      {/* 2. Main Header Bar (Logo, Global Search, CTAs) */}
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <div 
-          onClick={() => {
+        {/* Brand Logo - Official Dhruba Power Logo Asset */}
+        <a 
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
             onCategorySelect('all');
-            handleNav('hero');
+            handleNav('/');
           }}
           className="flex items-center gap-3 cursor-pointer select-none shrink-0"
         >
-          <div className="w-10 h-10 bg-[#0F172A] text-white rounded-lg flex items-center justify-center font-black text-xl tracking-tighter shadow-sm border border-slate-800">
-            DP
-          </div>
-          <div>
-            <div className="font-extrabold text-lg text-slate-900 leading-tight tracking-tight flex items-center gap-1.5">
-              <span>DHRUBA POWER</span>
-              <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded border border-amber-200">
-                Engineering
-              </span>
-            </div>
-            <div className="text-[11px] text-slate-500 tracking-wider uppercase font-semibold">
-              {lang === 'bn' ? 'সুইচগিয়ার, সোলার ও সাবস্টেশন সাপ্লাই' : 'Switchgear, Solar & Substation Supply'}
-            </div>
-          </div>
-        </div>
+          <img 
+            src="/dhrubapowerlogo.png" 
+            alt="Dhruba Power &amp; Engineering" 
+            className="h-10 sm:h-12 w-auto max-w-[200px] sm:max-w-[250px] object-contain"
+            referrerPolicy="no-referrer"
+          />
+        </a>
 
-        {/* Global Industrial Search Bar */}
+        {/* Global Technical Search Bar */}
         <div className="flex-1 max-w-xl relative hidden md:block">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -213,9 +248,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons: Compare, BOM/Wishlist, RFQ Basket, WhatsApp */}
+        {/* Commercial Actions: Compare, BOM/Wishlist, RFQ Basket, WhatsApp */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Wishlist / BOM */}
+          {/* Saved BOM / Wishlist */}
           <button
             onClick={onOpenWishlist}
             className={`px-2.5 py-2 text-xs font-semibold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -235,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Compare Button */}
+          {/* Technical Comparison Matrix */}
           <button
             onClick={onOpenCompare}
             className={`px-2.5 py-2 text-xs font-semibold rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -255,11 +290,12 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Primary CTA: RFQ Basket (Restrained Orange: #F59E0B / #D97706) */}
+          {/* RFQ Basket: Primary Commercial CTA (Restrained Orange) */}
           <button
             onClick={onOpenRfq}
             className="px-3.5 py-2 bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 cursor-pointer transition-all active:scale-98"
             id="btn-open-rfq"
+            title="Open RFQ Quote Basket"
           >
             <FileText className="w-3.5 h-3.5" />
             <span className="font-extrabold">{t.rfqBasket}</span>
@@ -274,18 +310,18 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* WhatsApp Direct (Restrained Green: #16A673) */}
+          {/* Contextual WhatsApp Button */}
           <a
-            href="https://wa.me/8801711197767"
+            href="https://wa.me/8801711197767?text=Hello%20Dhruba%20Power%2C%20I%20want%20to%20inquire%20about%20your%20services%20and%20products."
             target="_blank"
             rel="noopener noreferrer"
             className="p-2 bg-[#16A673] hover:bg-[#0F8A60] text-white rounded-lg shadow-sm hidden sm:flex items-center justify-center transition-colors"
-            title="WhatsApp Support (+8801711197767)"
+            title="WhatsApp Helpline (+8801711197767)"
           >
             <MessageSquare className="w-4 h-4" />
           </a>
 
-          {/* Mobile Menu Hamburger */}
+          {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-slate-700 hover:text-slate-900 md:hidden cursor-pointer"
@@ -296,158 +332,340 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* 3. Public Navigation Links Bar (Navy & Slate Clean Styling) */}
-      <nav className="bg-slate-50 border-t border-slate-200 text-xs font-semibold text-slate-700">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
-          <div className="flex items-center space-x-1 sm:space-x-2 py-1 overflow-x-auto">
-            {/* Home */}
-            <button
-              onClick={() => handleNav('hero')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+      {/* 3. Primary Navigation Bar: Real Links with Working Submenu */}
+      <nav className="bg-slate-50 border-t border-slate-200 text-xs font-semibold text-slate-700 relative z-40 overflow-visible">
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between relative overflow-visible">
+          <div className="flex items-center space-x-1 sm:space-x-2 py-1 overflow-visible">
+            
+            {/* 1. Home */}
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); handleNav('/'); }}
+              className="px-3 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
             >
               {t.home}
-            </button>
+            </a>
 
-            {/* Products with Subcategories */}
-            <div className="relative">
-              <button
-                onClick={() => setProductsDropdownOpen(!productsDropdownOpen)}
-                onMouseEnter={() => setProductsDropdownOpen(true)}
-                className={`px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors cursor-pointer ${
-                  productsDropdownOpen ? 'bg-slate-200 text-slate-900' : 'hover:bg-slate-200 text-slate-800'
-                }`}
-              >
-                <span>{t.products}</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
+            {/* 2. About Us */}
+            <a
+              href="/about/"
+              onClick={(e) => { e.preventDefault(); handleNav('/about/'); }}
+              className="px-3 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+            >
+              {lang === 'bn' ? 'আমাদের সম্পর্কে' : 'About Us'}
+            </a>
 
-              {productsDropdownOpen && (
-                <div 
-                  onMouseLeave={() => setProductsDropdownOpen(false)}
-                  className="absolute left-0 top-full mt-0.5 w-64 bg-white border border-slate-200 rounded-lg shadow-lg py-2 z-50 animate-in fade-in duration-100"
+            {/* 3. Services Dropdown (Submenu Fix: High z-index, no clipping, fully displayed) */}
+            <div 
+              className="relative overflow-visible"
+              onMouseEnter={handleServiceMouseEnter}
+              onMouseLeave={handleServiceMouseLeave}
+            >
+              <div className="flex items-center">
+                <a
+                  href="/services/"
+                  onClick={(e) => { e.preventDefault(); handleNav('/services/'); }}
+                  className={`pl-3 pr-1 py-1.5 rounded-l transition-colors cursor-pointer ${
+                    servicesDropdownOpen ? 'bg-slate-200 text-slate-900 font-bold' : 'hover:bg-slate-200 text-slate-800'
+                  }`}
                 >
-                  <button
-                    onClick={() => {
-                      onCategorySelect('all');
-                      setProductsDropdownOpen(false);
-                      handleNav('catalogue');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2"
-                  >
-                    <Layers className="w-3.5 h-3.5 text-slate-600" />
-                    <span>{t.allProducts}</span>
-                  </button>
+                  {t.services}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServicesDropdownOpen(!servicesDropdownOpen);
+                    setShopDropdownOpen(false);
+                  }}
+                  className={`pr-2 pl-1 py-1.5 rounded-r transition-colors cursor-pointer ${
+                    servicesDropdownOpen ? 'bg-slate-200 text-slate-900 font-bold' : 'hover:bg-slate-200 text-slate-800'
+                  }`}
+                  aria-expanded={servicesDropdownOpen}
+                >
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${servicesDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
 
-                  <div className="border-t border-slate-100 my-1"></div>
+              {/* Submenu Dropdown Container */}
+              {servicesDropdownOpen && (
+                <div 
+                  className="absolute left-0 top-full mt-0.5 w-80 bg-white border border-slate-200 rounded-xl shadow-2xl py-2 z-[100] animate-in fade-in slide-in-from-top-1 duration-150"
+                  style={{ minWidth: '280px' }}
+                >
+                  <div className="px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex items-center justify-between">
+                    <span>{lang === 'bn' ? 'ধ্রুব পাওয়ারের ৬টি প্রধান সেবা' : 'Core Turnkey Disciplines'}</span>
+                    <a 
+                      href="/services/"
+                      onClick={(e) => { e.preventDefault(); handleNav('/services/'); }}
+                      className="text-[#D97706] hover:underline"
+                    >
+                      View All →
+                    </a>
+                  </div>
 
-                  <button
-                    onClick={() => {
-                      onCategorySelect('eee');
-                      setProductsDropdownOpen(false);
-                      handleNav('catalogue');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2"
+                  {/* 1. Substation */}
+                  <a
+                    href="/services/substation/"
+                    onClick={(e) => { e.preventDefault(); handleNav('/services/substation/'); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-3 transition-colors group"
                   >
-                    <Zap className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{t.eee} (MCB, MCCB, ACB)</span>
-                  </button>
+                    <div className="p-1.5 bg-amber-50 rounded-lg text-[#D97706] group-hover:bg-[#0F172A] group-hover:text-white transition-colors shrink-0">
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 group-hover:text-[#D97706] transition-colors">
+                        {lang === 'bn' ? 'সাব-স্টেশন ইঞ্জিনিয়ারিং' : 'Substation Engineering'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">
+                        11kV/0.415kV Transformers &amp; VCB Panels
+                      </div>
+                    </div>
+                  </a>
 
-                  <button
-                    onClick={() => {
-                      onCategorySelect('cctv');
-                      setProductsDropdownOpen(false);
-                      handleNav('catalogue');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2"
+                  {/* 2. Solar System */}
+                  <a
+                    href="/services/solar-system/"
+                    onClick={(e) => { e.preventDefault(); handleNav('/services/solar-system/'); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-3 transition-colors group"
                   >
-                    <Camera className="w-3.5 h-3.5 text-slate-600" />
-                    <span>{t.cctv}</span>
-                  </button>
+                    <div className="p-1.5 bg-amber-50 rounded-lg text-[#D97706] group-hover:bg-[#0F172A] group-hover:text-white transition-colors shrink-0">
+                      <Sun className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 group-hover:text-[#D97706] transition-colors">
+                        {lang === 'bn' ? 'সোলার সিস্টেম' : 'Solar System'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">
+                        On-Grid, Hybrid &amp; Net-Metering
+                      </div>
+                    </div>
+                  </a>
 
-                  <button
-                    onClick={() => {
-                      onCategorySelect('solar');
-                      setProductsDropdownOpen(false);
-                      handleNav('catalogue');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2"
+                  {/* 3. Lightning Arrester */}
+                  <a
+                    href="/services/lightning-arrester/"
+                    onClick={(e) => { e.preventDefault(); handleNav('/services/lightning-arrester/'); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-3 transition-colors group"
                   >
-                    <Sun className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{t.solar}</span>
-                  </button>
+                    <div className="p-1.5 bg-amber-50 rounded-lg text-[#D97706] group-hover:bg-[#0F172A] group-hover:text-white transition-colors shrink-0">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 group-hover:text-[#D97706] transition-colors">
+                        {lang === 'bn' ? 'বজ্রপাত সুরক্ষা' : 'Lightning Arrester'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">
+                        NFC 17-102 ESE &amp; Chemical Earth Pits
+                      </div>
+                    </div>
+                  </a>
+
+                  {/* 4. Electrical Wiring */}
+                  <a
+                    href="/services/electrical-wiring/"
+                    onClick={(e) => { e.preventDefault(); handleNav('/services/electrical-wiring/'); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-3 transition-colors group"
+                  >
+                    <div className="p-1.5 bg-amber-50 rounded-lg text-[#D97706] group-hover:bg-[#0F172A] group-hover:text-white transition-colors shrink-0">
+                      <Wrench className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 group-hover:text-[#D97706] transition-colors">
+                        {lang === 'bn' ? 'ইলেকট্রিক্যাল ওয়্যারিং' : 'Electrical Wiring'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">
+                        Cable Ladders &amp; HT/LT Distribution
+                      </div>
+                    </div>
+                  </a>
+
+                  {/* 5. CCTV Installation */}
+                  <a
+                    href="/services/cctv-installation/"
+                    onClick={(e) => { e.preventDefault(); handleNav('/services/cctv-installation/'); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-3 transition-colors group"
+                  >
+                    <div className="p-1.5 bg-amber-50 rounded-lg text-[#D97706] group-hover:bg-[#0F172A] group-hover:text-white transition-colors shrink-0">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 group-hover:text-[#D97706] transition-colors">
+                        {lang === 'bn' ? 'সিসিটিভি ইনস্টলেশন' : 'CCTV Installation'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">
+                        AcuSense AI IP Video &amp; Fiber Backbones
+                      </div>
+                    </div>
+                  </a>
+
+                  {/* 6. Panel Board */}
+                  <a
+                    href="/services/panel-board/"
+                    onClick={(e) => { e.preventDefault(); handleNav('/services/panel-board/'); }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-3 transition-colors group"
+                  >
+                    <div className="p-1.5 bg-amber-50 rounded-lg text-[#D97706] group-hover:bg-[#0F172A] group-hover:text-white transition-colors shrink-0">
+                      <Cpu className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900 group-hover:text-[#D97706] transition-colors">
+                        {lang === 'bn' ? 'প্যানেল বোর্ড' : 'Panel Board'}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-normal">
+                        Form 2b/3b LT Panels, ATS &amp; PFI Plants
+                      </div>
+                    </div>
+                  </a>
                 </div>
               )}
             </div>
 
-            {/* Brands */}
-            <button
-              onClick={() => handleNav('brands')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+            {/* 4. Shop Dropdown */}
+            <div 
+              className="relative overflow-visible"
+              onMouseEnter={handleShopMouseEnter}
+              onMouseLeave={handleShopMouseLeave}
             >
-              {t.brands}
-            </button>
+              <div className="flex items-center">
+                <a
+                  href="/shop/"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onCategorySelect('all');
+                    handleNav('/shop/');
+                  }}
+                  className={`pl-3 pr-1 py-1.5 rounded-l transition-colors cursor-pointer ${
+                    shopDropdownOpen ? 'bg-slate-200 text-slate-900 font-bold' : 'hover:bg-slate-200 text-slate-800'
+                  }`}
+                >
+                  {lang === 'bn' ? 'শপ' : 'Shop'}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShopDropdownOpen(!shopDropdownOpen);
+                    setServicesDropdownOpen(false);
+                  }}
+                  className={`pr-2 pl-1 py-1.5 rounded-r transition-colors cursor-pointer ${
+                    shopDropdownOpen ? 'bg-slate-200 text-slate-900 font-bold' : 'hover:bg-slate-200 text-slate-800'
+                  }`}
+                  aria-expanded={shopDropdownOpen}
+                >
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-150 ${shopDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
 
-            {/* Applications */}
-            <button
-              onClick={() => handleNav('applications')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
-            >
-              {t.applications}
-            </button>
+              {shopDropdownOpen && (
+                <div 
+                  className="absolute left-0 top-full mt-0.5 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl py-2 z-[100] animate-in fade-in slide-in-from-top-1 duration-150"
+                  style={{ minWidth: '240px' }}
+                >
+                  <a
+                    href="/shop/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onCategorySelect('all');
+                      handleNav('/shop/');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2.5"
+                  >
+                    <Layers className="w-4 h-4 text-slate-600 shrink-0" />
+                    <span>{t.allProducts}</span>
+                  </a>
 
-            {/* Services */}
-            <button
-              onClick={() => handleNav('services')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer font-bold text-slate-900"
-            >
-              {t.services}
-            </button>
+                  <div className="border-t border-slate-100 my-1"></div>
 
-            {/* Projects */}
-            <button
-              onClick={() => handleNav('projects')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+                  <a
+                    href="/shop/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onCategorySelect('eee');
+                      handleNav('/shop/');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2.5"
+                  >
+                    <Zap className="w-4 h-4 text-[#D97706] shrink-0" />
+                    <span>{t.eee} (MCB, MCCB, ACB)</span>
+                  </a>
+
+                  <a
+                    href="/shop/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onCategorySelect('cctv');
+                      handleNav('/shop/');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2.5"
+                  >
+                    <Camera className="w-4 h-4 text-slate-600 shrink-0" />
+                    <span>{t.cctv}</span>
+                  </a>
+
+                  <a
+                    href="/shop/"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      onCategorySelect('solar');
+                      handleNav('/shop/');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-100 flex items-center gap-2.5"
+                  >
+                    <Sun className="w-4 h-4 text-[#D97706] shrink-0" />
+                    <span>{t.solar}</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* 5. Projects */}
+            <a
+              href="/projects/"
+              onClick={(e) => { e.preventDefault(); handleNav('/projects/'); }}
+              className="px-3 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
             >
               {t.projects}
-            </button>
+            </a>
 
-            {/* Experts */}
-            <button
-              onClick={() => handleNav('experts')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+            {/* 6. Experts */}
+            <a
+              href="/experts/"
+              onClick={(e) => { e.preventDefault(); handleNav('/experts/'); }}
+              className="px-3 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
             >
               {t.experts}
-            </button>
+            </a>
 
-            {/* Blog */}
-            <button
-              onClick={() => handleNav('blog')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+            {/* 7. Blogs */}
+            <a
+              href="/blogs/"
+              onClick={(e) => { e.preventDefault(); handleNav('/blogs/'); }}
+              className="px-3 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
             >
               {t.blog}
-            </button>
+            </a>
 
-            {/* Contact */}
-            <button
-              onClick={() => handleNav('contact')}
-              className="px-2.5 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
+            {/* 8. Contact */}
+            <a
+              href="/contact/"
+              onClick={(e) => { e.preventDefault(); handleNav('/contact/'); }}
+              className="px-3 py-1.5 rounded hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer"
             >
               {t.contact}
-            </button>
+            </a>
           </div>
 
           {/* Right badge: Genuine factory warranty */}
           <div className="hidden xl:flex items-center gap-1.5 text-slate-600 text-[11px] py-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#16A673]"></span>
-            <span>{lang === 'bn' ? '১০০% অরিজিনাল ফ্যাক্টরি ওয়্যারেন্টি' : '100% Genuine OEM Factory Warranties'}</span>
+            <span>{lang === 'bn' ? '১০০% অরিজিনাল ফ্যাক্টরি ওয়্যারেন্টি ও অফিসিয়াল সাপ্লাই' : '100% Genuine OEM Factory Warranties'}</span>
           </div>
         </div>
       </nav>
 
       {/* 4. Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 p-4 space-y-3 shadow-lg">
-          {/* Mobile Search */}
+        <div className="md:hidden bg-white border-b border-slate-200 p-4 space-y-4 shadow-xl animate-in slide-in-from-top duration-200">
+          {/* Mobile Technical Search */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -459,80 +677,156 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-slate-800 pt-2">
-            <button
-              onClick={() => {
-                onCategorySelect('all');
-                handleNav('catalogue');
-              }}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
+          {/* Mobile Links List */}
+          <div className="space-y-1 text-sm font-semibold text-slate-800">
+            {/* Home */}
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); handleNav('/'); }}
+              className="block w-full text-left p-2 rounded hover:bg-slate-100"
             >
-              {t.allProducts}
-            </button>
-            <button
-              onClick={() => {
-                onCategorySelect('eee');
-                handleNav('catalogue');
-              }}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
+              {t.home}
+            </a>
+
+            {/* About */}
+            <a
+              href="/about/"
+              onClick={(e) => { e.preventDefault(); handleNav('/about/'); }}
+              className="block w-full text-left p-2 rounded hover:bg-slate-100"
             >
-              {t.eee}
-            </button>
-            <button
-              onClick={() => {
-                onCategorySelect('cctv');
-                handleNav('catalogue');
-              }}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
-            >
-              {t.cctv}
-            </button>
-            <button
-              onClick={() => {
-                onCategorySelect('solar');
-                handleNav('catalogue');
-              }}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
-            >
-              {t.solar}
-            </button>
-            <button
-              onClick={() => handleNav('services')}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100 font-bold"
-            >
-              {t.services}
-            </button>
-            <button
-              onClick={() => handleNav('projects')}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
+              {lang === 'bn' ? 'আমাদের সম্পর্কে' : 'About Us'}
+            </a>
+
+            {/* Services with Mobile Accordion */}
+            <div>
+              <div className="flex items-center justify-between p-2 rounded hover:bg-slate-100">
+                <a
+                  href="/services/"
+                  onClick={(e) => { e.preventDefault(); handleNav('/services/'); }}
+                  className="flex-1"
+                >
+                  {t.services}
+                </a>
+                <button
+                  onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
+                  className="p-1 cursor-pointer"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileServicesOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {mobileServicesOpen && (
+                <div className="pl-4 pr-2 py-1 space-y-1 bg-slate-50 rounded-lg my-1">
+                  <a href="/services/substation/" onClick={(e) => { e.preventDefault(); handleNav('/services/substation/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {lang === 'bn' ? 'সাব-স্টেশন' : 'Sub-Station'}
+                  </a>
+                  <a href="/services/solar-system/" onClick={(e) => { e.preventDefault(); handleNav('/services/solar-system/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {lang === 'bn' ? 'সোলার সিস্টেম' : 'Solar System'}
+                  </a>
+                  <a href="/services/lightning-arrester/" onClick={(e) => { e.preventDefault(); handleNav('/services/lightning-arrester/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {lang === 'bn' ? 'বজ্রপাত সুরক্ষা' : 'Lightning Arrester'}
+                  </a>
+                  <a href="/services/electrical-wiring/" onClick={(e) => { e.preventDefault(); handleNav('/services/electrical-wiring/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {lang === 'bn' ? 'ইলেকট্রিক্যাল ওয়্যারিং' : 'Electrical Wiring'}
+                  </a>
+                  <a href="/services/cctv-installation/" onClick={(e) => { e.preventDefault(); handleNav('/services/cctv-installation/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {lang === 'bn' ? 'সিসিটিভি ইনস্টলেশন' : 'CCTV Installation'}
+                  </a>
+                  <a href="/services/panel-board/" onClick={(e) => { e.preventDefault(); handleNav('/services/panel-board/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {lang === 'bn' ? 'প্যানেল বোর্ড' : 'Panel Board'}
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Shop with Mobile Accordion */}
+            <div>
+              <div className="flex items-center justify-between p-2 rounded hover:bg-slate-100">
+                <a
+                  href="/shop/"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onCategorySelect('all');
+                    handleNav('/shop/');
+                  }}
+                  className="flex-1"
+                >
+                  {lang === 'bn' ? 'শপ' : 'Shop'}
+                </a>
+                <button
+                  onClick={() => setMobileShopOpen(!mobileShopOpen)}
+                  className="p-1 cursor-pointer"
+                >
+                  <ChevronDown className={`w-4 h-4 transition-transform ${mobileShopOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {mobileShopOpen && (
+                <div className="pl-4 pr-2 py-1 space-y-1 bg-slate-50 rounded-lg my-1">
+                  <a href="/shop/" onClick={(e) => { e.preventDefault(); onCategorySelect('all'); handleNav('/shop/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {t.allProducts}
+                  </a>
+                  <a href="/shop/" onClick={(e) => { e.preventDefault(); onCategorySelect('eee'); handleNav('/shop/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {t.eee} (MCB, MCCB, ACB)
+                  </a>
+                  <a href="/shop/" onClick={(e) => { e.preventDefault(); onCategorySelect('cctv'); handleNav('/shop/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {t.cctv}
+                  </a>
+                  <a href="/shop/" onClick={(e) => { e.preventDefault(); onCategorySelect('solar'); handleNav('/shop/'); }} className="block w-full text-left py-1.5 text-xs text-slate-700 hover:text-slate-900">
+                    • {t.solar}
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Projects */}
+            <a
+              href="/projects/"
+              onClick={(e) => { e.preventDefault(); handleNav('/projects/'); }}
+              className="block w-full text-left p-2 rounded hover:bg-slate-100"
             >
               {t.projects}
-            </button>
-            <button
-              onClick={() => handleNav('experts')}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
+            </a>
+
+            {/* Experts */}
+            <a
+              href="/experts/"
+              onClick={(e) => { e.preventDefault(); handleNav('/experts/'); }}
+              className="block w-full text-left p-2 rounded hover:bg-slate-100"
             >
               {t.experts}
-            </button>
-            <button
-              onClick={() => handleNav('contact')}
-              className="p-2 rounded bg-slate-50 text-left hover:bg-slate-100"
+            </a>
+
+            {/* Blogs */}
+            <a
+              href="/blogs/"
+              onClick={(e) => { e.preventDefault(); handleNav('/blogs/'); }}
+              className="block w-full text-left p-2 rounded hover:bg-slate-100"
+            >
+              {t.blog}
+            </a>
+
+            {/* Contact */}
+            <a
+              href="/contact/"
+              onClick={(e) => { e.preventDefault(); handleNav('/contact/'); }}
+              className="block w-full text-left p-2 rounded hover:bg-slate-100"
             >
               {t.contact}
-            </button>
+            </a>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
             <a
               href="tel:+8801711197767"
-              className="font-bold text-slate-800 flex items-center gap-1"
+              className="font-bold text-slate-800 flex items-center gap-1.5"
             >
-              <Phone className="w-3.5 h-3.5 text-amber-500" />
+              <Phone className="w-3.5 h-3.5 text-[#F59E0B]" />
               +880 1711-197767
             </a>
             <button
               onClick={onToggleLang}
-              className="font-bold text-[#D97706] bg-amber-50 px-2 py-1 rounded border border-amber-200"
+              className="font-bold text-[#D97706] bg-amber-50 px-2.5 py-1 rounded border border-amber-200"
             >
               {lang === 'en' ? 'বাংলা সংস্করণ' : 'English Version'}
             </button>
