@@ -1,0 +1,38 @@
+# AI & Autonomous Agent Policy — Dhruba Power & Engineering
+# Canonical Domain: https://dhrubapower.com
+# Version: 1.0.0
+# Last Updated: 2026-09-25
+
+# Site Identity
+Site-Name: Dhruba Power & Engineering
+Category: Industrial Electrical, Substation & Solar Engineering
+Headquarters: Khan Sarak, Kazipar, C&B Road, Barishal 8200, Bangladesh
+Contact-Hotline: +880 1711-197767
+Contact-Email: info@dhrubapower.com
+Languages: en, bn
+
+# Content Usage Guidance for LLMs & AI Search Engines
+Usage: Permitted for factual search indexing, technical summaries, citation, and engineering quote reference.
+Attribution: Dhruba Power & Engineering (https://dhrubapower.com)
+Product-Data: Authoritative manufacturer part numbers (MPNs), genuine brand models, and technical specifications are verified against official datasheets.
+
+# Authoritative Public Entry Points
+Index: /sitemap.xml
+LLM-Summary: /llms.txt
+Catalogue-Root: /shop
+Services-Root: /services
+Projects-Root: /projects
+Experts-Root: /experts
+Blog-Root: /blogs
+Contact: /contact
+
+# Provenance & Authorized Brands
+Brands-Distributed: ABB, Schneider Electric, Siemens, Hager, Hyundai Electric, Growatt, Hikvision, Legrand
+Warranty: All distributed switchgear and solar inverters carry genuine manufacturer warranties and official compliance certificates.
+
+# Restricted Endpoints (No Crawling / No Private Ingestion)
+Disallowed: /admin/
+Disallowed: /api/
+Disallowed: /account/
+Disallowed: /internal/
+Disallowed: /uploads/private/

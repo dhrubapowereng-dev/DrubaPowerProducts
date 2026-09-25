@@ -33,7 +33,7 @@ interface RfqDrawerProps {
   onRemoveItem: (productId: number) => void;
   onClearBasket: () => void;
   onAddCustomItem?: (name: string, mpn: string, brand: string, qty: number, note: string) => void;
-  onSubmitRfq: (rfqData: Omit<RfqRecord, 'id' | 'createdAt' | 'updatedAt'>) => RfqRecord;
+  onSubmitRfq: (rfqData: Omit<RfqRecord, 'id' | 'createdAt' | 'updatedAt'>) => RfqRecord | Promise<RfqRecord>;
   onOpenHistory: () => void;
   isLoggedIn: boolean;
   onToggleLogin: () => void;
@@ -147,7 +147,7 @@ export const RfqDrawer: React.FC<RfqDrawerProps> = ({
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const now = new Date();
       const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
       const randomSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -163,7 +163,7 @@ export const RfqDrawer: React.FC<RfqDrawerProps> = ({
         customerNote: item.customerNote
       }));
 
-      const newRfq = onSubmitRfq({
+      const newRfq = await onSubmitRfq({
         rfqNumber: generatedRfqNumber,
         company: company.trim() || 'Individual Client',
         contact: contact.trim(),

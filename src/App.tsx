@@ -86,75 +86,142 @@ export default function App() {
   const [isCustomerHistoryOpen, setIsCustomerHistoryOpen] = useState(false);
 
   // Authentication State: Gated for Staff only
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isStaffLoggedIn, setIsStaffLoggedIn] = useState(false);
   const [isAdminDeskOpen, setIsAdminDeskOpen] = useState(false);
 
-  // Products State (supports in-memory CRUD for staff testing)
+  // Products State (backed by persistent SQLite backend)
   const [catalogProducts, setCatalogProducts] = useState<ProductItem[]>(INDUSTRIAL_PRODUCTS);
 
-  // Dynamic Experts State (CRUD managed by staff, persisted in localStorage)
-  const [experts, setExperts] = useState<ExpertItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('dp_experts_records');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {
-      // fallback
-    }
-    return INITIAL_EXPERTS;
-  });
+  // Experts State (backed by persistent SQLite backend)
+  const [experts, setExperts] = useState<ExpertItem[]>(INITIAL_EXPERTS);
 
+  // RFQs State (backed by persistent SQLite backend)
+  const [rfqs, setRfqs] = useState<RfqRecord[]>(INITIAL_RFQS);
+
+  // Backend Sync Helpers
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products?limit=100');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.products) && data.products.length > 0) {
+          setCatalogProducts(data.products);
+        }
+      }
+    } catch (err) {
+      console.warn('[Sync Products]', err);
+    }
+  };
+
+  const fetchExperts = async () => {
+    try {
+      const res = await fetch('/api/experts?all=true');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.experts) && data.experts.length > 0) {
+          setExperts(data.experts);
+        }
+      }
+    } catch (err) {
+      console.warn('[Sync Experts]', err);
+    }
+  };
+
+  const fetchRfqs = async () => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      const res = await fetch('/api/rfq', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.rfqs) && data.rfqs.length > 0) {
+          setRfqs(data.rfqs);
+        }
+      }
+    } catch (err) {
+      console.warn('[Sync RFQs]', err);
+    }
+  };
+
+  const checkUserSession = async () => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      if (!token) return;
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          setCurrentUser(data.user);
+          if (data.user.role === 'admin') {
+            setIsStaffLoggedIn(true);
+          }
+        }
+      } else {
+        localStorage.removeItem('dp_auth_token');
+      }
+    } catch (err) {
+      console.warn('[Check Auth]', err);
+    }
+  };
+
+  // Initial load from persistent SQLite DB
   useEffect(() => {
-    try {
-      localStorage.setItem('dp_experts_records', JSON.stringify(experts));
-    } catch {
-      // ignore
-    }
-  }, [experts]);
+    fetchProducts();
+    fetchExperts();
+    fetchRfqs();
+    checkUserSession();
+  }, []);
 
-  const handleSaveExpert = (expert: ExpertItem) => {
-    setExperts((prev) => {
-      const exists = prev.some((e) => e.id === expert.id);
-      if (exists) {
-        return prev.map((e) => (e.id === expert.id ? expert : e));
-      }
-      return [...prev, expert];
-    });
+  const handleSaveExpert = async (expert: ExpertItem) => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      const exists = experts.some((e) => e.id === expert.id);
+      const url = exists ? `/api/experts/${expert.id}` : '/api/experts';
+      const method = exists ? 'PUT' : 'POST';
+
+      await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(expert)
+      });
+      await fetchExperts();
+    } catch (err) {
+      console.error('[Save Expert Error]', err);
+    }
   };
 
-  const handleDeleteExpert = (expertId: string) => {
-    setExperts((prev) => prev.filter((e) => e.id !== expertId));
+  const handleDeleteExpert = async (expertId: string) => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      await fetch(`/api/experts/${expertId}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      await fetchExperts();
+    } catch (err) {
+      console.error('[Delete Expert Error]', err);
+    }
   };
 
-  const handleToggleExpertActive = (expertId: string) => {
-    setExperts((prev) =>
-      prev.map((e) => (e.id === expertId ? { ...e, active: !e.active } : e))
-    );
+  const handleToggleExpertActive = async (expertId: string) => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      await fetch(`/api/experts/${expertId}/toggle-active`, {
+        method: 'PATCH',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      await fetchExperts();
+    } catch (err) {
+      console.error('[Toggle Expert Error]', err);
+    }
   };
-
-  // RFQ Store
-  const [rfqs, setRfqs] = useState<RfqRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem('dp_rfq_records');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch {
-      // fallback
-    }
-    return INITIAL_RFQS;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('dp_rfq_records', JSON.stringify(rfqs));
-    } catch {
-      // ignore
-    }
-  }, [rfqs]);
 
   // RFQ Handlers
   const handleAddToRfq = (product: ProductItem, qty: number = 1) => {
@@ -174,53 +241,72 @@ export default function App() {
     setIsRfqOpen(true);
   };
 
-  const handleCreateRfq = (rfqData: Omit<RfqRecord, 'id' | 'createdAt' | 'updatedAt'>): RfqRecord => {
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const nextId = rfqs.length > 0 ? Math.max(...rfqs.map((r) => r.id)) + 1 : 101;
-    const newRecord: RfqRecord = {
-      ...rfqData,
-      id: nextId,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    setRfqs((prev) => [newRecord, ...prev]);
-    return newRecord;
+  const handleCreateRfq = async (rfqData: Omit<RfqRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<RfqRecord> => {
+    const token = localStorage.getItem('dp_auth_token');
+    try {
+      const res = await fetch('/api/rfq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(rfqData)
+      });
+      const data = await res.json();
+      await fetchRfqs();
+      return {
+        ...rfqData,
+        id: data.rfqId || Date.now(),
+        rfqNumber: data.rfqNumber || `RFQ-${new Date().getFullYear()}-0000`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    } catch {
+      // fallback
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const nextId = rfqs.length > 0 ? Math.max(...rfqs.map((r) => r.id)) + 1 : 101;
+      const newRecord: RfqRecord = {
+        ...rfqData,
+        id: nextId,
+        createdAt: now,
+        updatedAt: now
+      };
+      setRfqs((prev) => [newRecord, ...prev]);
+      return newRecord;
+    }
   };
 
-  const handleUpdateRfqStatus = (rfqId: number, status: RfqStatus, quotedTotal?: number) => {
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    setRfqs((prev) =>
-      prev.map((r) =>
-        r.id === rfqId
-          ? {
-              ...r,
-              status,
-              quotedTotal: quotedTotal !== undefined ? quotedTotal : r.quotedTotal,
-              updatedAt: now
-            }
-          : r
-      )
-    );
+  const handleUpdateRfqStatus = async (rfqId: number, status: RfqStatus, quotedTotal?: number) => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      await fetch(`/api/rfq/${rfqId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status, quotedTotal })
+      });
+      await fetchRfqs();
+    } catch (err) {
+      console.error('[Update RFQ Error]', err);
+    }
   };
 
-  const handleConvertToWcOrder = (rfqId: number): number => {
-    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
-    const orderId = Math.floor(1000 + Math.random() * 9000);
-
-    setRfqs((prev) =>
-      prev.map((r) =>
-        r.id === rfqId
-          ? {
-              ...r,
-              status: 'CONVERTED' as RfqStatus,
-              wcOrderId: orderId,
-              updatedAt: now
-            }
-          : r
-      )
-    );
-    return orderId;
+  const handleConvertToWcOrder = async (rfqId: number): Promise<number> => {
+    try {
+      const token = localStorage.getItem('dp_auth_token');
+      const res = await fetch(`/api/rfq/${rfqId}/convert`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const data = await res.json();
+      await fetchRfqs();
+      return data.wcOrderId || 45000;
+    } catch {
+      const orderId = Math.floor(1000 + Math.random() * 9000);
+      return orderId;
+    }
   };
 
   // Compare & Wishlist Handlers
@@ -712,22 +798,24 @@ export default function App() {
         isOpen={isAccountOpen}
         onClose={() => setIsAccountOpen(false)}
         rfqs={rfqs}
-        isLoggedIn={isStaffLoggedIn}
-        userRole={isStaffLoggedIn ? 'admin' : 'visitor'}
-        onLoginCustomer={() => {
-          setIsCustomerHistoryOpen(true);
+        isLoggedIn={Boolean(currentUser)}
+        userRole={currentUser?.role === 'admin' ? 'admin' : (currentUser ? 'customer' : 'visitor')}
+        currentUser={currentUser}
+        onLoginCustomer={(userData, token) => {
+          setCurrentUser(userData);
           setIsAccountOpen(false);
+          fetchRfqs();
         }}
-        onLoginAdmin={(passcode: string) => {
-          if (passcode === 'dhruba2026' || passcode === 'admin') {
-            setIsStaffLoggedIn(true);
-            setIsAdminDeskOpen(true);
-            setIsAccountOpen(false);
-            return true;
-          }
-          return false;
+        onLoginAdmin={(userData, token) => {
+          setCurrentUser(userData);
+          setIsStaffLoggedIn(true);
+          setIsAdminDeskOpen(true);
+          setIsAccountOpen(false);
+          fetchRfqs();
         }}
         onLogout={() => {
+          localStorage.removeItem('dp_auth_token');
+          setCurrentUser(null);
           setIsStaffLoggedIn(false);
           setIsAdminDeskOpen(false);
           setIsAccountOpen(false);
@@ -757,23 +845,42 @@ export default function App() {
           experts={experts}
           onUpdateRfqStatus={handleUpdateRfqStatus}
           onConvertToWcOrder={handleConvertToWcOrder}
-          onSaveProduct={(savedP) => {
-            setCatalogProducts((prev) => {
-              const idx = prev.findIndex((p) => p.id === savedP.id);
-              if (idx >= 0) {
-                 const next = [...prev];
-                 next[idx] = savedP;
-                 return next;
-              }
-              return [savedP, ...prev];
-            });
+          onSaveProduct={async (savedP) => {
+            const token = localStorage.getItem('dp_auth_token');
+            const exists = catalogProducts.some((p) => p.id === savedP.id);
+            const url = exists ? `/api/products/${savedP.id}` : '/api/products';
+            const method = exists ? 'PUT' : 'POST';
+            try {
+              await fetch(url, {
+                method,
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { Authorization: `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify(savedP)
+              });
+              await fetchProducts();
+            } catch (e) {
+              console.error('[Save Product Error]', e);
+            }
           }}
-          onDeleteProduct={(id) => {
-            setCatalogProducts((prev) => prev.filter((p) => p.id !== id));
+          onDeleteProduct={async (id) => {
+            const token = localStorage.getItem('dp_auth_token');
+            try {
+              await fetch(`/api/products/${id}`, {
+                method: 'DELETE',
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+              });
+              await fetchProducts();
+            } catch (e) {
+              console.error('[Delete Product Error]', e);
+            }
           }}
           onSaveExpert={handleSaveExpert}
           onDeleteExpert={handleDeleteExpert}
           onToggleExpertActive={handleToggleExpertActive}
+          onRefreshProducts={fetchProducts}
+          onRefreshExperts={fetchExperts}
         />
       )}
     </div>

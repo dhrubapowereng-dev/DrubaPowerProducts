@@ -1,0 +1,49 @@
+# Dhruba Power & Engineering
+
+> Authorized industrial electrical, solar, and HT/LT substation engineering provider based in Barishal, Bangladesh. Over 7 years of engineering leadership and 500+ executed infrastructure projects.
+
+## Core Capabilities & Services
+
+- [Sub-Station Engineering & Commissioning](/services/substation): Turnkey 11kV/0.415kV industrial substation design, transformer supply, vacuum circuit breakers (VCB), and BPDB/BREB utility approvals.
+- [Industrial & Commercial Solar Systems](/services/solar-system): High-efficiency on-grid net-metering and hybrid solar plants for factories, commercial roofs, and agricultural facilities.
+- [Lightning Protection & Arresters](/services/lightning-arrester): Advanced Early Streamer Emission (ESE) lightning arresters, surge protection devices (SPD), and copper earthing networks compliant with BNBC 2020.
+- [Industrial Electrical Wiring & HT/LT Distribution](/services/electrical-wiring): Heavy-duty industrial cable laying, busbar trunking (BBT), and cable ladder installations for textiles and processing plants.
+- [CC-TV & Surveillance Systems](/services/cctv-installation): High-definition IP perimeter surveillance, NVR systems, thermal monitoring, and optical fiber backbone integration.
+- [Custom HT/LT Switchgear & Panel Boards](/services/panel-board): In-house fabrication of Motor Control Centers (MCC), Power Factor Improvement (PFI) plants, and automatic changeover switch (ATS) panels.
+
+## Product Catalogue
+
+- [Industrial Equipment Catalog](/shop): Faceted search for electrical power, solar, and industrial surveillance components.
+- [Electrical & Power Distribution (EEE)](/category/eee): Miniature Circuit Breakers (MCB), Molded Case Circuit Breakers (MCCB), Air Circuit Breakers (ACB), and magnetic contactors.
+- [Solar PV & Renewable Energy](/category/solar): Commercial on-grid string inverters, hybrid inverters, solar charge controllers, and DC disconnect switches.
+- [CCTV & Industrial Surveillance](/category/cctv): Network IP security cameras, PoE switches, network video recorders, and surveillance storage.
+
+## Authorized Brands
+
+- [ABB](/brand/abb): Circuit breakers, contactors, VFDs, and switchgear components.
+- [Schneider Electric](/brand/schneider-electric): Acti9 MCBs, Compact NSX MCCBs, and automation relays.
+- [Siemens](/brand/siemens): Sentron switchgear, Sirius motor starters, and power relays.
+- [Hager](/brand/hager): Commercial distribution boards and modular protection.
+- [Hyundai Electric](/brand/hyundai-electric): Molded case circuit breakers and vacuum breakers.
+- [Growatt](/brand/growatt): Industrial grid-tied solar inverters and monitoring systems.
+- [Hikvision](/brand/hikvision): Smart IP security cameras and network surveillance hardware.
+- [Legrand](/brand/legrand): Cable management, industrial plugs, and distribution panels.
+
+## Key Public Resources
+
+- [Homepage](/) - Official portal for industrial electrical engineering, solar plants, and HT/LT substation systems.
+- [Completed Engineering Projects](/projects): Portfolio of commissioned substations, solar microgrids, and industrial wiring retrofits.
+- [Certified Engineering Specialists](/experts): Directory of licensed substation and power distribution engineers with direct WhatsApp communication.
+- [Engineering Insights & Safety Guidelines](/blogs): Authoritative publications on substation maintenance, transformer BDV testing, and BNBC electrical safety codes.
+- [Corporate Profile & Credentials](/about): Company history, mission, leadership, and warehouse facilities in Barishal.
+- [Commercial RFQ & Quotes Desk](/rfq): Multi-item bill-of-materials quote builder and customer specification upload desk.
+- [Contact & Emergency Dispatch](/contact): 24/7 emergency repair dispatch, address, hotline, and engineer consultation.
+
+## Contact Information
+
+- **Company**: Dhruba Power & Engineering
+- **Address**: Khan Sarak, Kazipar, C&B Road, Barishal 8200, Bangladesh
+- **Hotline / 24/7 Emergency**: +880 1711-197767
+- **Email**: info@dhrubapower.com
+- **Languages Supported**: English (en), Bengali (bn)
+- **Primary Canonical Domain**: https://dhrubapower.com

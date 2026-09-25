@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { 
   SlidersHorizontal, 
   RotateCcw, 
@@ -10,6 +10,7 @@ import {
   Camera, 
   Layers,
   ChevronRight,
+  ChevronLeft,
   ShieldCheck
 } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/translations';
@@ -140,6 +141,28 @@ export const ShopPage: React.FC<ShopPageProps> = ({
       return true;
     });
   }, [catalogProducts, activeCategory, selectedBrands, selectedCurrents, selectedPoles, inStockOnly, searchQuery]);
+
+  // Pagination Support (Crawlable & Scalable)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 9;
+
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1);
+  }, [activeCategory, selectedBrands, selectedCurrents, selectedPoles, inStockOnly, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedProducts = useMemo(() => {
+    const start = (activePage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, activePage]);
+
+  const goToPage = (p: number) => {
+    const target = Math.max(1, Math.min(p, totalPages));
+    setCurrentPage(target);
+    window.scrollTo({ top: 180, behavior: 'smooth' });
+  };
 
   return (
     <div className="bg-[#F8FAFC] min-h-screen py-8">
@@ -387,31 +410,90 @@ export const ShopPage: React.FC<ShopPageProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredProducts.map((product) => {
-                  const isAdded = isAddedToRfq(product.id);
-                  const isComp = isCompared(product.id);
-                  const isWish = isWishlisted(product.id);
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginatedProducts.map((product) => {
+                    const isAdded = isAddedToRfq(product.id);
+                    const isComp = isCompared(product.id);
+                    const isWish = isWishlisted(product.id);
 
-                  return (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onSelect={(p) => {
-                        onSelectProduct(p);
-                        onNavigate(`/product/${p.id}/`);
-                      }}
-                      onAddToRfq={onAddToRfq}
-                      isAddedToRfq={isAdded}
-                      isCompared={isComp}
-                      onToggleCompare={onToggleCompare}
-                      isWishlisted={isWish}
-                      onToggleWishlist={onToggleWishlist}
-                      lang={lang}
-                      onCategoryClick={(cat) => onCategorySelect(cat)}
-                    />
-                  );
-                })}
+                    return (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        onSelect={(p) => {
+                          onSelectProduct(p);
+                          onNavigate(`/product/${p.id}/`);
+                        }}
+                        onAddToRfq={onAddToRfq}
+                        isAddedToRfq={isAdded}
+                        isCompared={isComp}
+                        onToggleCompare={onToggleCompare}
+                        isWishlisted={isWish}
+                        onToggleWishlist={onToggleWishlist}
+                        lang={lang}
+                        onCategoryClick={(cat) => onCategorySelect(cat)}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Controls with crawlable anchors */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3">
+                    <div className="text-xs text-slate-500">
+                      Showing <span className="font-bold text-slate-800">{(activePage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="font-bold text-slate-800">{Math.min(activePage * ITEMS_PER_PAGE, filteredProducts.length)}</span> of <span className="font-bold text-slate-800">{filteredProducts.length}</span> products
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => goToPage(activePage - 1)}
+                        disabled={activePage <= 1}
+                        className={`p-2 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-colors ${
+                          activePage <= 1 
+                            ? 'border-slate-200 text-slate-300 cursor-not-allowed' 
+                            : 'border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer'
+                        }`}
+                        title="Previous page"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="hidden sm:inline">Prev</span>
+                      </button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                        <a
+                          key={pNum}
+                          href={`/shop/?page=${pNum}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            goToPage(pNum);
+                          }}
+                          className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-colors ${
+                            pNum === activePage
+                              ? 'bg-slate-900 text-white shadow-sm'
+                              : 'border border-slate-200 text-slate-600 hover:bg-slate-100'
+                          }`}
+                        >
+                          {pNum}
+                        </a>
+                      ))}
+
+                      <button
+                        onClick={() => goToPage(activePage + 1)}
+                        disabled={activePage >= totalPages}
+                        className={`p-2 rounded-lg border text-xs font-semibold flex items-center gap-1 transition-colors ${
+                          activePage >= totalPages 
+                            ? 'border-slate-200 text-slate-300 cursor-not-allowed' 
+                            : 'border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer'
+                        }`}
+                        title="Next page"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
